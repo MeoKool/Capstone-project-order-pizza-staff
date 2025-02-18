@@ -57,10 +57,7 @@ export default function LoginScreen({ navigation }) {
           className="bg-white rounded-lg mt-6 p-4"
           onPress={handleLogin}
         >
-          <Text
-            className="text-[#f26b0f] text-center font-bold text-base"
-            onPress={() => navigation.navigate("Home")}
-          >
+          <Text className="text-[#f26b0f] text-center font-bold text-base">
             ĐĂNG NHẬP
           </Text>
         </TouchableOpacity>
