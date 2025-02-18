@@ -8,6 +8,8 @@ import SearchScreen from "./src/screens/SearchScreen";
 import StoreScreen from "./src/screens/StoreScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
+import LoginScreen from "./src/screens/LoginScreen";
+import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -60,6 +62,8 @@ export default function App() {
           headerShown: false,
         }}
       >
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
