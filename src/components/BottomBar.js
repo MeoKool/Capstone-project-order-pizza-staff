@@ -1,13 +1,13 @@
 import React from "react";
 import { View, TouchableOpacity, Text, Animated } from "react-native";
-import { CircleDollarSign, Home, Store, User } from "lucide-react-native";
+import { Home, SquareMenu, Store, User } from "lucide-react-native";
 
 const BottomBar = ({ state, descriptors, navigation }) => {
   if (!state) return null;
 
   const tabs = [
-    { key: "Home", icon: Home, label: "Home" },
-    { key: "Payment", icon: CircleDollarSign, label: "Bàn" },
+    { key: "Home", icon: Home, label: "Trang chủ" },
+    { key: "Payment", icon: SquareMenu, label: "Bàn" },
     { key: "Store", icon: Store, label: "Cửa hàng" },
     { key: "Profile", icon: User, label: "Cá nhân" },
   ];

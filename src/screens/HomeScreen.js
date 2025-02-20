@@ -24,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import BottomBar from "../components/BottomBar";
+import TodaySchedule from "../components/TodaySchedule";
 
 const { width } = Dimensions.get("window");
 
@@ -197,6 +198,14 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 ))}
               </View>
+            </View>
+
+            {/* Today's Schedule */}
+            <View className="px-6 mt-8">
+              <Text className="text-white text-xl font-bold mb-4">
+                Lịch làm việc hôm nay
+              </Text>
+              <TodaySchedule />
             </View>
 
             {/* Main Features */}

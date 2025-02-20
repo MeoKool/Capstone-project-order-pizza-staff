@@ -8,7 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Coffee } from "lucide-react-native";
+import { Pizza } from "lucide-react-native";
 
 export default function LoadingScreen() {
   const spinValue = new Animated.Value(0);
@@ -44,7 +44,7 @@ export default function LoadingScreen() {
       <SafeAreaView className="flex-1 justify-center items-center">
         <View className="items-center">
           <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Coffee size={80} color="#ffffff" />
+            <Pizza size={80} color="#ffffff" />
           </Animated.View>
           <Text className="text-white text-2xl font-bold mt-6 mb-2">
             Đang tải...
