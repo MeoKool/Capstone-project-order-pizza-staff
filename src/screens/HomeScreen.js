@@ -22,6 +22,7 @@ import {
   Calendar,
   Clock,
   RefreshCcw,
+  CircleDollarSign,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import BottomBar from "../components/BottomBar";
@@ -78,8 +79,8 @@ export default function HomeScreen({ navigation }) {
 
   const settings = [
     {
-      icon: HeadphonesIcon,
-      label: "Trung tâm hỗ trợ",
+      icon: CircleDollarSign,
+      label: "Thanh toán",
       color: "#4D96FF",
       bgColor: "#E8F1FF",
     },
@@ -104,9 +105,9 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f26b0f]">
+    <SafeAreaView className="flex-1 bg-[#ff7e5f]">
       <ScrollView className="flex-1">
-        <LinearGradient colors={["#f26b0f", "#ff8f50"]} className="flex-1">
+        <LinearGradient colors={["#ff7e5f", "#feb47b"]} className="flex-1">
           {/* Header */}
           <View className="px-6 py-4">
             <View className="flex-row items-center justify-between mb-4">
@@ -129,7 +130,6 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-
           {/* Work Progress */}
           <View className="px-6 mt-2">
             <Text className="text-white text-lg font-semibold mb-4">
@@ -160,7 +160,6 @@ export default function HomeScreen({ navigation }) {
               ))}
             </View>
           </View>
-
           {/* Main Features */}
           <View className="px-6 mt-6">
             <Text className="text-white text-lg font-semibold mb-4">
@@ -189,7 +188,6 @@ export default function HomeScreen({ navigation }) {
               ))}
             </View>
           </View>
-
           {/* Settings */}
           <View className="px-6 mt-6 mb-28">
             <Text className="text-white text-lg font-semibold mb-4">
@@ -204,6 +202,11 @@ export default function HomeScreen({ navigation }) {
                       ? "border-b border-gray-100"
                       : ""
                   }`}
+                  onPress={() => {
+                    if (setting.label === "Thanh toán") {
+                      navigation.navigate("Payment");
+                    }
+                  }}
                 >
                   <View
                     className={`w-10 h-10 rounded-full items-center justify-center`}

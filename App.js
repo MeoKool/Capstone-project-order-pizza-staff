@@ -10,6 +10,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
 import LoginScreen from "./src/screens/LoginScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
+import PaymentScreen from "./src/screens/PaymentScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -65,6 +66,7 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
+        <Stack.Screen name="Payment" component={PaymentScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
