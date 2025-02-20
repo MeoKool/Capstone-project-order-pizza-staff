@@ -31,10 +31,10 @@ function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Search"
-        component={SearchScreen}
+        name="Payment"
+        component={PaymentScreen}
         options={{
-          tabBarLabel: "Tìm kiếm",
+          tabBarLabel: "Bàn",
         }}
       />
       <Tab.Screen
