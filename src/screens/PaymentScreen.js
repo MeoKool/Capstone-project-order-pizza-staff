@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { ChevronLeft, Table2, Users, Circle } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import LoadingScreen from "./LoadingScreen";
 
 const API_URL = "http://vietsac.id.vn/pizza-service/api";
 
@@ -145,7 +146,7 @@ export default function PaymentScreen() {
     return (
       <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
         <SafeAreaView className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#ffffff" />
+          <LoadingScreen />
         </SafeAreaView>
       </LinearGradient>
     );
