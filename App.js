@@ -4,13 +4,13 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import HomeScreen from "./src/screens/HomeScreen";
-import SearchScreen from "./src/screens/SearchScreen";
 import StoreScreen from "./src/screens/StoreScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
 import LoginScreen from "./src/screens/LoginScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 import PaymentScreen from "./src/screens/PaymentScreen";
+import ToDoWeekScreen from "./src/screens/ToDoWeek";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -66,7 +66,11 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
-        <Stack.Screen name="Payment" component={PaymentScreen} />
+        <Stack.Screen
+          name="ToDoWeek"
+          component={ToDoWeekScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

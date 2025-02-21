@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   View,
@@ -77,43 +75,16 @@ export default function HomeScreen({ navigation }) {
     },
   ];
 
-  const settings = [
-    {
-      icon: CircleDollarSign,
-      label: "Thanh toán",
-      color: "#4D96FF",
-      bgColor: "#E8F1FF",
-    },
-    {
-      icon: Settings,
-      label: "Thiết lập tài khoản",
-      color: "#FF6B6B",
-      bgColor: "#FFE8E8",
-    },
-    {
-      icon: Lock,
-      label: "Đổi mật khẩu",
-      color: "#6BCB77",
-      bgColor: "#E8F8EA",
-    },
-    {
-      icon: LogOut,
-      label: "Đăng xuất",
-      color: "#FF4444",
-      bgColor: "#FFE8E8",
-    },
-  ];
-
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [120, 80],
+    outputRange: [90, 80],
     extrapolate: "clamp",
   });
 
   return (
     <>
       <StatusBar
-        barStyle="light-content"
+        barStyle="dark-content"
         translucent
         backgroundColor="transparent"
       />
@@ -123,7 +94,7 @@ export default function HomeScreen({ navigation }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView className="flex-1">
           <Animated.ScrollView
             className="flex-1"
             onScroll={Animated.event(
@@ -231,6 +202,11 @@ export default function HomeScreen({ navigation }) {
                         ? "border-b border-gray-100"
                         : ""
                     }`}
+                    onPress={() => {
+                      if (feature.label === "Lịch làm việc") {
+                        navigation.navigate("ToDoWeek");
+                      }
+                    }}
                     activeOpacity={0.7}
                   >
                     <View
@@ -241,57 +217,6 @@ export default function HomeScreen({ navigation }) {
                     </View>
                     <Text className="ml-4 flex-1 text-gray-800 font-semibold text-base">
                       {feature.label}
-                    </Text>
-                    <ChevronRight size={20} color="#9CA3AF" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Settings */}
-            <View className="px-6 mt-8 mb-28">
-              <Text className="text-white text-xl font-bold mb-4">
-                Thiết lập
-              </Text>
-              <View
-                className="bg-white rounded-2xl overflow-hidden"
-                style={{
-                  elevation: 8,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 8,
-                }}
-              >
-                {settings.map((setting, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    className={`flex-row items-center p-4 ${
-                      index !== settings.length - 1
-                        ? "border-b border-gray-100"
-                        : ""
-                    }`}
-                    onPress={() => {
-                      if (setting.label === "Thanh toán") {
-                        navigation.navigate("Payment");
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      className={`w-12 h-12 rounded-full items-center justify-center`}
-                      style={{ backgroundColor: setting.bgColor }}
-                    >
-                      <setting.icon size={24} color={setting.color} />
-                    </View>
-                    <Text
-                      className={`ml-4 flex-1 font-semibold text-base`}
-                      style={{
-                        color:
-                          setting.label === "Đăng xuất" ? "#FF4444" : "#1F2937",
-                      }}
-                    >
-                      {setting.label}
                     </Text>
                     <ChevronRight size={20} color="#9CA3AF" />
                   </TouchableOpacity>

@@ -2,9 +2,9 @@ import { View, Text } from "react-native";
 import { Clock } from "lucide-react-native";
 
 const scheduleData = [
-  { time: "08:00 - 12:00", task: "Ca sáng" },
+  { time: "08:00 - 12:00", task: "Khu A" },
   { time: "12:00 - 13:00", task: "Nghỉ trưa" },
-  { time: "13:00 - 17:00", task: "Ca chiều" },
+  { time: "13:00 - 17:00", task: "Khu A" },
 ];
 
 export default function TodaySchedule() {
