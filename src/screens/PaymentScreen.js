@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   SafeAreaView,
   Animated,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import { ChevronLeft, Table2, Users, Circle } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,10 +21,6 @@ export default function PaymentScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigation = useNavigation();
-
-  useEffect(() => {
-    fetchTablesAndZones();
-  }, []);
 
   const fetchTablesAndZones = async () => {
     try {
@@ -42,6 +38,12 @@ export default function PaymentScreen() {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTablesAndZones();
+    }, [])
+  );
 
   const handleTablePress = (table) => {
     navigation.navigate("TableDetails", {
@@ -175,7 +177,7 @@ export default function PaymentScreen() {
                   <ChevronLeft size={24} color="white" />
                 </TouchableOpacity>
                 <Text className="text-white text-2xl font-bold">
-                  Restaurant Tables
+                  Bàn Nhà Hàng
                 </Text>
               </View>
             </View>

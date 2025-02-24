@@ -53,7 +53,7 @@ export default function QRCodePaymentScreen() {
           >
             <ChevronLeft size={24} color="white" />
           </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold">Scan to Pay</Text>
+          <Text className="text-white text-2xl font-bold">Thanh Toán</Text>
         </View>
 
         <View className="flex-1 justify-center items-center">
@@ -61,7 +61,7 @@ export default function QRCodePaymentScreen() {
             <ActivityIndicator size="large" color="#ffffff" />
           ) : (
             <View className="bg-white p-4 rounded-xl">
-              <QRCode value={paymentData} size={300} />
+              <QRCode value={paymentData} size={250} />
             </View>
           )}
           <Text className="text-white text-4xl mt-4">
