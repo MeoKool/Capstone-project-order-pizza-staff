@@ -1,12 +1,9 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   SafeAreaView,
   Animated,
 } from "react-native";
@@ -23,8 +20,6 @@ export default function PaymentScreen() {
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [qrCode, setQrCode] = useState(null);
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -48,17 +43,11 @@ export default function PaymentScreen() {
     }
   };
 
-  const handleTablePress = async (table) => {
-    setSelectedTable(table);
-    try {
-      const response = await axios.post(
-        `${API_URL}/payments/create-payment-link`,
-        { tableId: table.id }
-      );
-      setQrCode(response);
-    } catch (err) {
-      setError("Failed to generate payment link. Please try again.");
-    }
+  const handleTablePress = (table) => {
+    navigation.navigate("TableDetails", {
+      currentOrderId: table.currentOrderId,
+      code: table.code,
+    });
   };
 
   const getStatusColor = (status) => {
@@ -76,9 +65,7 @@ export default function PaymentScreen() {
     <Animated.View>
       <TouchableOpacity
         className={`bg-white rounded-2xl p-5 m-2 shadow-lg ${
-          selectedTable?.id === item.id
-            ? "border-2 border-[#f26b0f]"
-            : "border border-gray-100"
+          false ? "border-2 border-[#f26b0f]" : "border border-gray-100"
         }`}
         style={{
           shadowColor: "#000",
@@ -96,7 +83,7 @@ export default function PaymentScreen() {
             <Table2 size={20} color="#f26b0f" />
           </View>
           <Text className="text-lg font-bold text-gray-800">
-            Table {item.tableNumber}
+            Table {item.code}
           </Text>
         </View>
 

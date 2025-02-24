@@ -11,6 +11,8 @@ import LoginScreen from "./src/screens/LoginScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 import PaymentScreen from "./src/screens/PaymentScreen";
 import ToDoWeekScreen from "./src/screens/ToDoWeek";
+import TableDetailsScreen from "./src/screens/table-details-screen";
+import QRCodePaymentScreen from "./src/screens/QRCodePaymentScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -66,6 +68,8 @@ export default function App() {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="MainTabs" component={TabNavigator} />
+        <Stack.Screen name="TableDetails" component={TableDetailsScreen} />
+        <Stack.Screen name="QRCodePayment" component={QRCodePaymentScreen} />
         <Stack.Screen
           name="ToDoWeek"
           component={ToDoWeekScreen}

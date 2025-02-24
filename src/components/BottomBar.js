@@ -8,7 +8,7 @@ const BottomBar = ({ state, descriptors, navigation }) => {
   const tabs = [
     { key: "Home", icon: Home, label: "Trang chủ" },
     { key: "Payment", icon: SquareMenu, label: "Bàn" },
-    { key: "Store", icon: Store, label: "Cửa hàng" },
+    // { key: "Store", icon: Store, label: "Cửa hàng" },
     { key: "Profile", icon: User, label: "Cá nhân" },
   ];
 
