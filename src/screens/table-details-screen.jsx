@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import LoadingScreen from "./LoadingScreen";
+import { PAYMENT_STATUS } from "../base/constant";
 
 const API_URL = "https://vietsac.id.vn/pizza-service";
 
@@ -33,7 +34,7 @@ export default function TableDetailsScreen() {
     fetchOrderItems();
     const unsubscribe = navigation.addListener("focus", fetchOrderItems);
     return unsubscribe;
-  }, []);
+  }, [navigation]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -41,7 +42,7 @@ export default function TableDetailsScreen() {
       duration: 500,
       useNativeDriver: true,
     }).start();
-  }, [orderItems]);
+  }, [fadeAnim]);
 
   const fetchOrderItems = async () => {
     try {
@@ -72,14 +73,7 @@ export default function TableDetailsScreen() {
       );
       if (response.data.success) {
         Alert.alert("Thành công", "Checkout thành công");
-        console.log(order.totalPrice);
-
-        setTimeout(() => {
-          navigation.navigate("QRCodePayment", {
-            orderId: currentOrderId,
-            totalAmount: order.totalPrice,
-          });
-        }, 2000);
+        setOrder({ ...order, status: PAYMENT_STATUS.CHECKOUT });
       } else {
         throw new Error(response.data.message || "Thanh toán thất bại");
       }
@@ -91,13 +85,6 @@ export default function TableDetailsScreen() {
     } finally {
       setCheckingOut(false);
     }
-  };
-
-  const handleCreateQR = () => {
-    navigation.navigate("QRCodePayment", {
-      orderId: currentOrderId,
-      totalAmount: order.totalPrice,
-    });
   };
 
   const renderOrderItem = ({ item, index }) => (
@@ -171,6 +158,13 @@ export default function TableDetailsScreen() {
     );
   }
 
+  const handlePayment = () => {
+    navigation.navigate("QRCodePayment", {
+      orderId: currentOrderId,
+      totalAmount: order.totalPrice,
+    });
+  };
+
   return (
     <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
       <StatusBar style="light" />
@@ -227,30 +221,36 @@ export default function TableDetailsScreen() {
                 className={`py-4 px-6 rounded-xl ${
                   orderItems.length === 0 ||
                   checkingOut ||
-                  (order && order.status === "Paid")
+                  (order && order.status === PAYMENT_STATUS.PAID)
                     ? "bg-gray-400"
-                    : "bg-[#4ade80]"
+                    : order &&
+                      (order.status === PAYMENT_STATUS.UNPAID ||
+                        order.status === PAYMENT_STATUS.CHECKOUT)
+                    ? "bg-[#4ade80]"
+                    : "bg-[#22c55e]"
                 }`}
                 onPress={
-                  order && order.status === "Paid"
+                  order && order.status === PAYMENT_STATUS.PAID
                     ? null
-                    : order && order.status !== "Unpaid"
-                    ? handleCreateQR
+                    : order &&
+                      (order.status === PAYMENT_STATUS.PAID ||
+                        order.status === PAYMENT_STATUS.CHECKOUT)
+                    ? handlePayment
                     : handleCheckout
                 }
                 disabled={
                   orderItems.length === 0 ||
                   checkingOut ||
-                  (order && order.status === "Paid")
+                  (order && order.status === PAYMENT_STATUS.PAID)
                 }
               >
                 <Text className="text-white text-center font-bold text-lg">
                   {checkingOut
                     ? "Đang xử lý..."
-                    : order && order.status === "Paid"
+                    : order && order.status === PAYMENT_STATUS.PAID
                     ? "Đã Thanh Toán"
-                    : order && order.status !== "Unpaid"
-                    ? "Tạo QR Thanh Toán"
+                    : order && order.status === PAYMENT_STATUS.CHECKOUT
+                    ? "Thanh Toán"
                     : "Checkout"}
                 </Text>
               </TouchableOpacity>

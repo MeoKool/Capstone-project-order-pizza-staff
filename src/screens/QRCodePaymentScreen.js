@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
   SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,13 +24,7 @@ export default function QRCodePaymentScreen() {
     const createPaymentQRCode = async () => {
       try {
         const response = await axios.post(
-          `https://vietsac.id.vn/pizza-service/api/payments/create-payment-qrcode`,
-          { orderId },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+          `https://vietsac.id.vn/pizza-service/api/payments/create-payment-qrcode/${orderId}`
         );
         setPaymentData(response.data.result);
       } catch (error) {
@@ -40,7 +35,22 @@ export default function QRCodePaymentScreen() {
     };
 
     createPaymentQRCode();
-  }, [orderId, totalAmount]);
+  }, [orderId]);
+
+  const handleCashPayment = async () => {
+    try {
+      await axios.post(
+        `https://vietsac.id.vn/pizza-service/api/payments/pay-order-by-cash/${orderId}`
+      );
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error processing cash payment:", error);
+      Alert.alert(
+        "Lỗi",
+        "Không thể xử lý thanh toán tiền mặt. Vui lòng thử lại."
+      );
+    }
+  };
 
   return (
     <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
@@ -57,6 +67,9 @@ export default function QRCodePaymentScreen() {
         </View>
 
         <View className="flex-1 justify-center items-center">
+          <Text className="text-white text-2xl mt-2 mb-4">
+            Quét mã để thanh toán
+          </Text>
           {loading ? (
             <ActivityIndicator size="large" color="#ffffff" />
           ) : (
@@ -64,12 +77,20 @@ export default function QRCodePaymentScreen() {
               <QRCode value={paymentData} size={250} />
             </View>
           )}
+
           <Text className="text-white text-4xl mt-4">
             Tổng tiền: {totalAmount.toLocaleString("vi-VN")} VNĐ
           </Text>
-          <Text className="text-white text-2xl mt-2">
-            Quét mã để thanh toán
-          </Text>
+          <Text className="text-white text-2xl mt-2">Hoặc</Text>
+          <TouchableOpacity
+            onPress={handleCashPayment}
+            className="mt-6 bg-white py-3 px-6 rounded-xl"
+            activeOpacity={0.7}
+          >
+            <Text className="text-[#ff7e5f] text-lg font-bold">
+              Thanh toán bằng tiền mặt
+            </Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </LinearGradient>
