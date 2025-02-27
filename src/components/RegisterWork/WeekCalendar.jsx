@@ -1,14 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 
-const DAYS_OF_WEEK = [
-  "Chủ Nhật",
-  "Thứ Hai",
-  "Thứ Ba",
-  "Thứ Tư",
-  "Thứ Năm",
-  "Thứ Sáu",
-  "Thứ Bảy",
-];
+const DAYS_OF_WEEK = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
   // Format date as DD/MM

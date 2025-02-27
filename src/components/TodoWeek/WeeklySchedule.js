@@ -1,5 +1,5 @@
 import { View, Text, ScrollView } from "react-native";
-import { Calendar, Clock, MapPin, User } from "lucide-react-native";
+import { Calendar, Clock, User } from "lucide-react-native";
 
 export default function WeeklySchedule({ weekSchedule }) {
   return (
@@ -32,11 +32,6 @@ export default function WeeklySchedule({ weekSchedule }) {
                 <View className="flex-row items-center mb-2">
                   <Clock size={16} color="#6B7280" />
                   <Text className="text-gray-600 ml-2">{shift.time}</Text>
-                </View>
-
-                <View className="flex-row items-center mb-2">
-                  <MapPin size={16} color="#6B7280" />
-                  <Text className="text-gray-600 ml-2">{shift.location}</Text>
                 </View>
 
                 <View className="flex-row items-center">

@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import HomeScreen from "./src/screens/HomeScreen";
-import StoreScreen from "./src/screens/StoreScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
 import LoginScreen from "./src/screens/LoginScreen";

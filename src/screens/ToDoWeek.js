@@ -8,7 +8,7 @@ import { SAMPLE_SCHEDULE } from "../data/sampleSchedule";
 import Header from "../components/Header";
 import WeekNavigation from "../components/TodoWeek/WeekNavigation";
 
-export default function WeeklyScheduleScreen({ navigation }) {
+export default function ToDoWeekScreen({ navigation }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekDates, setWeekDates] = useState([]);
 
@@ -16,6 +16,8 @@ export default function WeeklyScheduleScreen({ navigation }) {
     const dates = getWeekDates(currentDate);
     setWeekDates(dates);
   }, [currentDate]);
+
+  useEffect(() => {}, [weekDates]);
 
   const goToPreviousWeek = () => {
     const newDate = new Date(currentDate);
@@ -30,10 +32,14 @@ export default function WeeklyScheduleScreen({ navigation }) {
   };
 
   const getScheduleForWeek = () => {
-    return weekDates.map((date) => ({
-      date,
-      schedule: SAMPLE_SCHEDULE[formatDateKey(date)] || [],
-    }));
+    const schedule = weekDates.map((date) => {
+      const dateKey = formatDateKey(date);
+      return {
+        date,
+        schedule: SAMPLE_SCHEDULE[dateKey] || [],
+      };
+    });
+    return schedule;
   };
 
   return (
@@ -50,7 +56,7 @@ export default function WeeklyScheduleScreen({ navigation }) {
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView className="flex-1">
-          <Header navigation={navigation} title="Lịch làm việc" />
+          <Header title="Lịch làm việc" navigation={navigation} />
           <WeekNavigation
             currentDate={currentDate}
             weekDates={weekDates}
