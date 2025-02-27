@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { SafeAreaView, StatusBar, Animated, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import BottomBar from "../components/BottomBar";
-import Header from "../components/RegisterWork/Header";
+import Header from "../components/Header";
 import WeekCalendar from "../components/RegisterWork/WeekCalendar";
 import TimeSlotSelector from "../components/RegisterWork/TimeSlotSelector";
 import RegistrationSummary from "../components/RegisterWork/RegistrationSummary";
@@ -121,7 +121,7 @@ export default function WorkScheduleScreen({ navigation }) {
           text: "Xác nhận",
           onPress: () => {
             Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
-            navigation.navigate("Home");
+            navigation.navigate("MainTabs");
           },
         },
       ]

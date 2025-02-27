@@ -203,6 +203,8 @@ export default function HomeScreen({ navigation }) {
                         navigation.navigate("ToDoWeek");
                       } else if (feature.label === "Đăng ký giờ làm việc") {
                         navigation.navigate("WorkSchedule");
+                      } else if (feature.label === "Đổi ca làm") {
+                        navigation.navigate("SwapSchedule");
                       }
                     }}
                     activeOpacity={0.7}
