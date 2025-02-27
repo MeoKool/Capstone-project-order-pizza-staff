@@ -15,10 +15,6 @@ import {
   Calendar,
   Clock,
   RefreshCcw,
-  CircleDollarSign,
-  Settings,
-  Lock,
-  LogOut,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import BottomBar from "../components/BottomBar";
@@ -205,6 +201,8 @@ export default function HomeScreen({ navigation }) {
                     onPress={() => {
                       if (feature.label === "Lịch làm việc") {
                         navigation.navigate("ToDoWeek");
+                      } else if (feature.label === "Đăng ký giờ làm việc") {
+                        navigation.navigate("WorkSchedule");
                       }
                     }}
                     activeOpacity={0.7}

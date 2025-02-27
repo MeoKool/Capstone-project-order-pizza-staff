@@ -1,4 +1,3 @@
-import React from "react";
 import "./global.css";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -13,6 +12,7 @@ import PaymentScreen from "./src/screens/PaymentScreen";
 import ToDoWeekScreen from "./src/screens/ToDoWeek";
 import TableDetailsScreen from "./src/screens/table-details-screen";
 import QRCodePaymentScreen from "./src/screens/QRCodePaymentScreen";
+import WorkScheduleScreen from "./src/screens/WorkScheduleScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -70,6 +70,7 @@ export default function App() {
         <Stack.Screen name="MainTabs" component={TabNavigator} />
         <Stack.Screen name="TableDetails" component={TableDetailsScreen} />
         <Stack.Screen name="QRCodePayment" component={QRCodePaymentScreen} />
+        <Stack.Screen name="WorkSchedule" component={WorkScheduleScreen} />
         <Stack.Screen
           name="ToDoWeek"
           component={ToDoWeekScreen}
