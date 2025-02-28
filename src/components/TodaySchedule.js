@@ -1,30 +1,37 @@
-import { View, Text } from "react-native";
-import { Clock } from "lucide-react-native";
+import { View, Text, TouchableOpacity } from "react-native";
+import { Clock, MapPin, Users } from "lucide-react-native";
 
-const scheduleData = [
-  { time: "08:00 - 12:00", task: "Khu A" },
-  { time: "12:00 - 13:00", task: "Nghỉ trưa" },
-  { time: "13:00 - 17:00", task: "Khu A" },
-];
-
-export default function TodaySchedule() {
-  return (
-    <View className="bg-white rounded-2xl p-4 shadow-lg">
-      {scheduleData.map((item, index) => (
-        <View key={index} className="flex-row items-center mb-3">
-          <View className="flex-row items-center w-30">
-            <Clock size={16} color="#ff7e5f" />
-            <Text className="ml-2 text-sm font-semibold text-[#ff7e5f]">
-              {item.time}
-            </Text>
-          </View>
-          <View className="flex-1 bg-[#fff5f1] p-2 rounded-lg">
-            <Text className="text-sm font-medium text-[#1F2937]">
-              {item.task}
-            </Text>
-          </View>
-        </View>
-      ))}
+const TodaySchedule = () => (
+  <View className="bg-white rounded-2xl p-6 shadow-lg">
+    <View className="flex-row items-center justify-between mb-4">
+      <View className="flex-row items-center">
+        <Clock size={24} color="#4D96FF" />
+        <Text className="text-gray-800 font-bold text-xl ml-2">
+          Ca làm việc hôm nay
+        </Text>
+      </View>
+      <TouchableOpacity>
+        <Text className="text-[#4D96FF] font-semibold">Xem tất cả</Text>
+      </TouchableOpacity>
     </View>
-  );
-}
+    <View className="flex-row justify-between items-center mb-4">
+      <View>
+        <Text className="text-gray-600 text-base mb-1">Thời gian</Text>
+        <Text className="text-gray-800 font-semibold text-lg">
+          08:00 - 17:00
+        </Text>
+      </View>
+      <View>
+        <Text className="text-gray-600 text-base mb-1">Vị trí</Text>
+        <View className="flex-row items-center">
+          <MapPin size={16} color="#4D96FF" />
+          <Text className="text-gray-800 font-semibold text-lg ml-1">
+            Khu vực ban công
+          </Text>
+        </View>
+      </View>
+    </View>
+  </View>
+);
+
+export default TodaySchedule;

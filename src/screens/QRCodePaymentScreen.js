@@ -176,6 +176,12 @@ export default function QRCodePaymentScreen() {
                   ) : (
                     <>
                       <QRCode value={paymentData} size={250} />
+                      <TouchableOpacity
+                        onPress={refreshQRCode}
+                        className="absolute top-3 right-2 bg-gray-100 p-2 rounded-full"
+                      >
+                        <RefreshCw size={16} color="#f26b0f" />
+                      </TouchableOpacity>
                     </>
                   )}
                 </View>

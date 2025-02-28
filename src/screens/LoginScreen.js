@@ -44,7 +44,7 @@ export default function LoginScreen({ navigation }) {
           >
             <View className="flex-1 px-8 pt-12 justify-center">
               <View className="mb-12">
-                <Text className="text-white text-4xl font-bold mb-2">
+                <Text className="text-white text-5xl font-bold mb-2">
                   Chào mừng
                 </Text>
                 <Text className="text-white text-xl opacity-80">
@@ -53,56 +53,46 @@ export default function LoginScreen({ navigation }) {
               </View>
 
               <View className="space-y-6">
-                <View>
-                  <View className="absolute z-10 h-full justify-center pl-4">
-                    <Phone size={20} color="#ff7e5f" />
+                <View className="bg-white/20 rounded-2xl p-1">
+                  <View className="flex-row items-center bg-white rounded-xl">
+                    <View className="p-4">
+                      <Phone size={24} color="#ff7e5f" />
+                    </View>
+                    <TextInput
+                      className="flex-1 p-4 text-base text-gray-800"
+                      placeholder="Số điện thoại của bạn"
+                      placeholderTextColor="#999"
+                      keyboardType="phone-pad"
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                    />
                   </View>
-                  <TextInput
-                    className="bg-white p-4 rounded-xl text-base pl-12 mb-3"
-                    placeholder="Số điện thoại của bạn"
-                    placeholderTextColor="#999"
-                    keyboardType="phone-pad"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    style={{
-                      elevation: 3,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
-                    }}
-                  />
                 </View>
 
-                <View>
-                  <View className="absolute z-10 h-full justify-center pl-4">
-                    <Lock size={20} color="#ff7e5f" />
+                <View className="bg-white/20 rounded-2xl p-1">
+                  <View className="flex-row items-center bg-white rounded-xl">
+                    <View className="p-4">
+                      <Lock size={24} color="#ff7e5f" />
+                    </View>
+                    <TextInput
+                      className="flex-1 p-4 text-base text-gray-800 pr-12"
+                      placeholder="Mật khẩu"
+                      placeholderTextColor="#999"
+                      secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
+                    />
+                    <TouchableOpacity
+                      className="absolute right-0 h-full justify-center pr-4"
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={24} color="#ff7e5f" />
+                      ) : (
+                        <Eye size={24} color="#ff7e5f" />
+                      )}
+                    </TouchableOpacity>
                   </View>
-                  <TextInput
-                    className="bg-white p-4 rounded-xl text-base pl-12 pr-12"
-                    placeholder="Mật khẩu"
-                    placeholderTextColor="#999"
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    style={{
-                      elevation: 3,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 4,
-                    }}
-                  />
-                  <TouchableOpacity
-                    className="absolute z-10 h-full right-0 justify-center pr-4"
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color="#ff7e5f" />
-                    ) : (
-                      <Eye size={20} color="#ff7e5f" />
-                    )}
-                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -116,7 +106,7 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="bg-white rounded-xl mt-8 p-4"
+                className="bg-white rounded-xl mt-8 p-4 shadow-lg"
                 onPress={handleLogin}
                 style={{
                   elevation: 5,
