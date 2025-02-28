@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { SafeAreaView, StatusBar, Animated, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";

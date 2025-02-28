@@ -7,12 +7,12 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
 import LoginScreen from "./src/screens/LoginScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
-import PaymentScreen from "./src/screens/PaymentScreen";
-import TableDetailsScreen from "./src/screens/table-details-screen";
 import QRCodePaymentScreen from "./src/screens/QRCodePaymentScreen";
 import WorkScheduleScreen from "./src/screens/WorkScheduleScreen";
 import ToDoWeekScreen from "./src/screens/ToDoWeek";
 import SwapScreen from "./src/screens/SwapScreen";
+import TablesScreen from "./src/screens/TablesScreen";
+import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -27,8 +27,8 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen
-        name="Payment"
-        component={PaymentScreen}
+        name="Tables"
+        component={TablesScreen}
         options={{ tabBarLabel: "Bàn" }}
       />
       <Tab.Screen
