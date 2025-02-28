@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 
-const Header = ({ navigation, title, headerHeight }) => {
+const Header = ({ navigation, title, headerHeight, code }) => {
   return (
     <Animated.View style={{ height: headerHeight }} className="px-6 py-4">
       <View className="flex-row items-center">
