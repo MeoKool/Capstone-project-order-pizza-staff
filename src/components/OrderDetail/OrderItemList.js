@@ -1,33 +1,53 @@
+import { useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
+import { ChevronDown, ChevronUp } from "lucide-react-native";
 import OrderItem from "./OrderItem";
 
 export default function OrderItemList({ orderItems, error, onRetry }) {
+  const [expandedSections, setExpandedSections] = useState({
+    "Chưa hoàn thành": true,
+    "Hoàn thành": true,
+  });
+
   const sections = [
     {
       title: "Chưa hoàn thành",
       data: orderItems.filter((item) => item.orderItemStatus !== "Done"),
       count: orderItems.filter((item) => item.orderItemStatus !== "Done")
         .length,
-      color: "#f97316", // Changed to a more vibrant orange
+      color: "#f97316",
     },
     {
       title: "Hoàn thành",
       data: orderItems.filter((item) => item.orderItemStatus === "Done"),
       count: orderItems.filter((item) => item.orderItemStatus === "Done")
         .length,
-      color: "#10b981", // Changed to a more vibrant green
+      color: "#10b981",
     },
   ];
 
+  const toggleSection = (title) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }));
+  };
+
   const renderSectionHeader = ({ section: { title, count, color } }) => (
-    <View
-      className="bg-white px-4 py-2 mb-2 rounded-lg"
+    <TouchableOpacity
+      onPress={() => toggleSection(title)}
+      className="bg-white px-4 py-2 mb-2 rounded-lg flex-row justify-between items-center"
       style={{ borderLeftWidth: 4, borderLeftColor: color }}
     >
       <Text className="font-bold text-lg" style={{ color: color }}>
         {title} ({count})
       </Text>
-    </View>
+      {expandedSections[title] ? (
+        <ChevronUp size={24} color={color} />
+      ) : (
+        <ChevronDown size={24} color={color} />
+      )}
+    </TouchableOpacity>
   );
 
   if (error) {
@@ -51,9 +71,10 @@ export default function OrderItemList({ orderItems, error, onRetry }) {
       renderItem={({ item }) => (
         <View>
           {renderSectionHeader({ section: item })}
-          {item.data.map((orderItem) => (
-            <OrderItem key={orderItem.id} item={orderItem} />
-          ))}
+          {expandedSections[item.title] &&
+            item.data.map((orderItem) => (
+              <OrderItem key={orderItem.id} item={orderItem} />
+            ))}
         </View>
       )}
       keyExtractor={(item, index) => index.toString()}

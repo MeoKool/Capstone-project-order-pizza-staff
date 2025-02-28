@@ -125,7 +125,7 @@ export default function PaymentScreen() {
             <Table2 size={20} color="#f26b0f" />
           </View>
           <Text className="text-lg font-bold text-gray-800">
-            Table {item.code}
+            Bàn {item.code}
           </Text>
         </View>
 
@@ -166,7 +166,7 @@ export default function PaymentScreen() {
         <View className="flex-row items-center mb-3 px-2">
           <View className="w-1.5 h-6 bg-white rounded-full mr-2" />
           <Text className="text-white text-xl font-bold">{zone.name}</Text>
-          <Text className="text-white ml-2">({zoneTables.length} tables)</Text>
+          <Text className="text-white ml-2">({zoneTables.length} bàn)</Text>
         </View>
         <FlatList
           data={zoneTables}
@@ -177,7 +177,9 @@ export default function PaymentScreen() {
           contentContainerStyle={{ paddingHorizontal: 6 }}
           ListEmptyComponent={
             <View className="flex items-center justify-center p-4 mx-2 bg-white/20 rounded-xl">
-              <Text className="text-white text-center">No tables found</Text>
+              <Text className="text-white text-center">
+                Không tìm thấy bàn!
+              </Text>
             </View>
           }
         />
@@ -223,7 +225,7 @@ export default function PaymentScreen() {
             onPress={fetchTablesAndZones}
             activeOpacity={0.7}
           >
-            <Text className="text-[#f26b0f] font-bold">Try Again</Text>
+            <Text className="text-[#f26b0f] font-bold">Thử lại</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </LinearGradient>
@@ -274,7 +276,7 @@ export default function PaymentScreen() {
                   selectedStatus === null ? "text-[#f26b0f]" : "text-white"
                 }`}
               >
-                All
+                Tất cả
               </Text>
             </TouchableOpacity>
             {statusOptions.map((status) => (
