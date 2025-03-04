@@ -1,51 +1,72 @@
-import { View, Text, TouchableOpacity, Animated } from "react-native";
-import { Table2, Users, Circle } from "lucide-react-native";
+import { View, Text, TouchableOpacity } from "react-native";
+import { Users } from "lucide-react-native";
 
-const TableItem = ({ item, onPress, getStatusColor }) => (
-  <Animated.View>
+const TableItem = ({ item, onPress, getStatusColor }) => {
+  const statusColor = getStatusColor(item.status);
+
+  return (
     <TouchableOpacity
-      className={`bg-white rounded-2xl p-5 m-2 shadow-lg ${
-        false ? "border-2 border-[#f26b0f]" : "border border-gray-100"
-      }`}
+      className="bg-white rounded-2xl p-4 m-2 shadow-lg"
       style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
         width: 180,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
       }}
       onPress={() => onPress(item)}
       activeOpacity={0.7}
     >
-      <View className="flex-row items-center mb-3">
-        <View className="bg-[#f26b0f]/10 p-2 rounded-lg mr-3">
-          <Table2 size={20} color="#f26b0f" />
-        </View>
-        <Text className="text-lg font-bold text-gray-800">Bàn {item.code}</Text>
-      </View>
-
-      <View className="flex-row items-center mb-3">
-        <Users size={16} color="#6b7280" className="mr-2" />
-        <Text className="text-sm text-gray-600">Capacity: {item.capacity}</Text>
-      </View>
-
-      <View className="flex-row items-center">
-        <Circle
-          size={8}
-          fill={getStatusColor(item.status)}
-          color={getStatusColor(item.status)}
-          className="mr-2"
+      {/* Status Indicator */}
+      <View className="flex-row justify-between items-center mb-3">
+        <View
+          className="h-3 w-3 rounded-full"
+          style={{ backgroundColor: statusColor }}
         />
-        <Text
-          className="text-sm font-medium"
-          style={{ color: getStatusColor(item.status) }}
+        <View
+          className="px-3 py-1 rounded-full"
+          style={{ backgroundColor: statusColor + "20" }}
         >
-          {item.status}
-        </Text>
+          <Text style={{ color: statusColor }} className="text-xs font-medium">
+            {item.status}
+          </Text>
+        </View>
+      </View>
+
+      {/* Table Number */}
+      <View className="items-center justify-center bg-gray-50 rounded-xl py-4 mb-3">
+        <Text className="text-gray-900 text-3xl font-bold">{item.code}</Text>
+        <Text className="text-gray-500 text-xs mt-1">Bàn số</Text>
+      </View>
+
+      {/* Footer Info */}
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-lg">
+          <Users size={14} color="#374151" />
+          <Text className="text-gray-700 text-sm ml-1 font-medium">
+            {item.capacity}
+          </Text>
+        </View>
+
+        <View
+          className="px-3 py-1 rounded-lg"
+          style={{
+            backgroundColor: item.currentOrderId ? "#EF444425" : "#22C55E25",
+          }}
+        >
+          <Text
+            style={{
+              color: item.currentOrderId ? "#EF4444" : "#22C55E",
+            }}
+            className="text-xs font-medium"
+          >
+            {item.currentOrderId ? "Có khách" : "Trống"}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
-  </Animated.View>
-);
+  );
+};
 
 export default TableItem;
