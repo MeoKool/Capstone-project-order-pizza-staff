@@ -1,17 +1,16 @@
-import React from "react";
-import { ScrollView, TouchableOpacity, Text, View } from "react-native";
+import { ScrollView, TouchableOpacity, Text } from "react-native";
 
 const StatusFilter = ({ selectedStatus, setSelectedStatus, statusOptions }) => {
-  const getStatusIcon = (status) => {
+  const getStatusInfo = (status) => {
     switch (status) {
       case "Opening":
-        return "🟢";
+        return { icon: "🟢", label: "Bàn mở" };
       case "Closing":
-        return "🔴";
+        return { icon: "🔴", label: "Bàn đóng" };
       case "Locked":
-        return "🔒";
+        return { icon: "🔒", label: "Bàn khóa" };
       default:
-        return "🔍";
+        return { icon: "🔍", label: status };
     }
   };
 
@@ -40,28 +39,31 @@ const StatusFilter = ({ selectedStatus, setSelectedStatus, statusOptions }) => {
         </Text>
       </TouchableOpacity>
 
-      {statusOptions.map((status) => (
-        <TouchableOpacity
-          key={status}
-          className={`mr-3 py-2.5 px-4 rounded-full flex-row items-center ${
-            selectedStatus === status
-              ? "bg-white"
-              : "bg-white/15 border border-white/20"
-          }`}
-          onPress={() =>
-            setSelectedStatus(status === selectedStatus ? null : status)
-          }
-        >
-          <Text className="mr-2">{getStatusIcon(status)}</Text>
-          <Text
-            className={`font-medium ${
-              selectedStatus === status ? "text-[#f26b0f]" : "text-white"
+      {statusOptions.map((status) => {
+        const { icon, label } = getStatusInfo(status);
+        return (
+          <TouchableOpacity
+            key={status}
+            className={`mr-3 py-2.5 px-4 rounded-full flex-row items-center ${
+              selectedStatus === status
+                ? "bg-white"
+                : "bg-white/15 border border-white/20"
             }`}
+            onPress={() =>
+              setSelectedStatus(status === selectedStatus ? null : status)
+            }
           >
-            {status}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Text className="mr-2">{icon}</Text>
+            <Text
+              className={`font-medium ${
+                selectedStatus === status ? "text-[#f26b0f]" : "text-white"
+              }`}
+            >
+              {label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 };

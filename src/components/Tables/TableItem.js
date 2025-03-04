@@ -4,6 +4,19 @@ import { Users } from "lucide-react-native";
 const TableItem = ({ item, onPress, getStatusColor }) => {
   const statusColor = getStatusColor(item.status);
 
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case "Opening":
+        return "Bàn mở";
+      case "Closing":
+        return "Bàn đóng";
+      case "Locked":
+        return "Bàn khóa";
+      default:
+        return status;
+    }
+  };
+
   return (
     <TouchableOpacity
       className="bg-white rounded-2xl p-4 m-2 shadow-lg"
@@ -29,7 +42,7 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
           style={{ backgroundColor: statusColor + "20" }}
         >
           <Text style={{ color: statusColor }} className="text-xs font-medium">
-            {item.status}
+            {getStatusLabel(item.status)}
           </Text>
         </View>
       </View>
