@@ -77,7 +77,7 @@ export default function TableDetailsScreen() {
   const handlePayment = () => {
     navigation.navigate("QRCodePayment", {
       orderId: currentOrderId,
-      totalAmount: order.totalPrice,
+      orderItems: orderItems,
     });
   };
 

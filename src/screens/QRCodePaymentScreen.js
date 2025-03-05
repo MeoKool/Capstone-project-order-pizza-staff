@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import {
   View,
@@ -20,17 +22,20 @@ import {
   RefreshCw,
 } from "lucide-react-native";
 import axios from "axios";
+import { calculateTotalAmount } from "../components/OrderDetail/TotalAndCheckout";
 
 const { width } = Dimensions.get("window");
 
 export default function QRCodePaymentScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { orderId, totalAmount } = route.params;
+  const { orderId, orderItems = [] } = route.params;
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("qr"); // 'qr' or 'cash'
   const [paymentStatus, setPaymentStatus] = useState("pending"); // 'pending', 'processing', 'completed'
+
+  const totalAmount = calculateTotalAmount(orderItems);
 
   useEffect(() => {
     const createPaymentQRCode = async () => {
@@ -89,7 +94,7 @@ export default function QRCodePaymentScreen() {
   };
 
   const formatCurrency = (amount) => {
-    return amount.toLocaleString("vi-VN");
+    return amount ? amount.toLocaleString("vi-VN") : "0";
   };
 
   return (
@@ -156,7 +161,7 @@ export default function QRCodePaymentScreen() {
                 Tổng tiền thanh toán
               </Text>
               <Text className="text-white text-4xl font-bold text-center">
-                {formatCurrency(totalAmount)} VNĐ
+                {totalAmount.toLocaleString("vi-VN")} VNĐ
               </Text>
             </View>
 

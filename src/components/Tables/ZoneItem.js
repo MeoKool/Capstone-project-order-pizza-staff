@@ -69,8 +69,8 @@ const ZoneItem = ({ zone, tables, onTablePress, getStatusColor }) => {
       <View className="flex-row items-center mb-3 px-4">
         <MapPin size={18} color="white" />
         <Text className="text-white text-xl font-bold ml-2">{zone.name}</Text>
-        <View className="bg-white/20 rounded-full px-3 py-1 ml-2">
-          <Text className="text-white text-xs font-medium">
+        <View className="bg-white/20 rounded-full px-3 py-1 ml-2 ">
+          <Text className="text-white text-xl font-medium ">
             {zoneTables.length} bàn
           </Text>
         </View>

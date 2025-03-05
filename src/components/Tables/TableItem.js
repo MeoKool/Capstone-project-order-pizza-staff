@@ -32,14 +32,14 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
       activeOpacity={0.7}
     >
       {/* Status Indicator */}
-      <View className="flex-row justify-between items-center mb-3">
+      <View className="flex-row justify-between items-center mb-3 ">
         <View
-          className="h-3 w-3 rounded-full"
+          className="h-3 w-3 rounded-full "
           style={{ backgroundColor: statusColor }}
         />
         <View
-          className="px-3 py-1 rounded-full"
-          style={{ backgroundColor: statusColor + "20" }}
+          className="px-3 py-1 rounded-full "
+          style={{ backgroundColor: statusColor + "30" }}
         >
           <Text style={{ color: statusColor }} className="text-xs font-medium">
             {getStatusLabel(item.status)}
@@ -48,16 +48,16 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
       </View>
 
       {/* Table Number */}
-      <View className="items-center justify-center bg-gray-50 rounded-xl py-4 mb-3">
+      <View className="items-center justify-center bg-gray-300 rounded-xl py-4 mb-3">
+        <Text className="text-gray-500 text-xs mt-1">Bàn</Text>
         <Text className="text-gray-900 text-3xl font-bold">{item.code}</Text>
-        <Text className="text-gray-500 text-xs mt-1">Bàn số</Text>
       </View>
 
       {/* Footer Info */}
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-lg">
+      <View className="flex-row items-center justify-between ">
+        <View className="flex-row items-center bg-gray-300 px-2 py-1 rounded-lg ">
           <Users size={14} color="#374151" />
-          <Text className="text-gray-700 text-sm ml-1 font-medium">
+          <Text className="text-gray-700 text-sm ml-1 font-medium ">
             {item.capacity}
           </Text>
         </View>
@@ -65,7 +65,9 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
         <View
           className="px-3 py-1 rounded-lg"
           style={{
-            backgroundColor: item.currentOrderId ? "#EF444425" : "#22C55E25",
+            backgroundColor: item.currentOrderId
+              ? "#EF444425" + "30"
+              : "#22C55E25" + "20",
           }}
         >
           <Text
