@@ -65,9 +65,7 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
         <View
           className="px-3 py-1 rounded-lg"
           style={{
-            backgroundColor: item.currentOrderId
-              ? "#EF444425" + "30"
-              : "#22C55E25" + "20",
+            backgroundColor: item.currentOrderId ? "#F7A8C4" : "#FFF0BD",
           }}
         >
           <Text

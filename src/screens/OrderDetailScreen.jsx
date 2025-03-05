@@ -4,6 +4,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import LoadingScreen from "./LoadingScreen";
 import { PAYMENT_STATUS } from "../base/constant";
 import OrderItemList from "../components/OrderDetail/OrderItemList";
@@ -92,27 +93,29 @@ export default function TableDetailsScreen() {
   }
 
   return (
-    <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
-      <StatusBar style="light" />
-      <SafeAreaView style={{ flex: 1 }}>
-        <Header
-          title={"Chi tiết bàn " + code}
-          onBack={() => navigation.goBack()}
-          navigation={navigation}
-        />
-        <OrderItemList
-          orderItems={orderItems}
-          error={error}
-          onRetry={fetchOrderItems}
-        />
-        <TotalAndCheckout
-          order={order}
-          orderItems={orderItems}
-          checkingOut={checkingOut}
-          onCheckout={handleCheckout}
-          onPayment={handlePayment}
-        />
-      </SafeAreaView>
-    </LinearGradient>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <SafeAreaView style={{ flex: 1 }}>
+          <Header
+            title={"Chi tiết bàn " + code}
+            onBack={() => navigation.goBack()}
+            navigation={navigation}
+          />
+          <OrderItemList
+            orderItems={orderItems}
+            error={error}
+            onRetry={fetchOrderItems}
+          />
+          <TotalAndCheckout
+            order={order}
+            orderItems={orderItems}
+            checkingOut={checkingOut}
+            onCheckout={handleCheckout}
+            onPayment={handlePayment}
+          />
+        </SafeAreaView>
+      </LinearGradient>
+    </GestureHandlerRootView>
   );
 }
