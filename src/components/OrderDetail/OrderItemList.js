@@ -73,7 +73,11 @@ export default function OrderItemList({ orderItems, error, onRetry }) {
           {renderSectionHeader({ section: item })}
           {expandedSections[item.title] &&
             item.data.map((orderItem) => (
-              <OrderItem key={orderItem.id} item={orderItem} />
+              <OrderItem
+                key={orderItem.id}
+                item={orderItem}
+                onRefresh={onRetry}
+              />
             ))}
         </View>
       )}
