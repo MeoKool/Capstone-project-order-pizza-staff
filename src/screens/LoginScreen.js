@@ -10,18 +10,57 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   StatusBar,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Lock, Phone, Eye, EyeOff } from "lucide-react-native";
+import { Lock, User, Eye, EyeOff } from "lucide-react-native";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen({ navigation }) {
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    console.log("Login with:", phoneNumber, password);
-    navigation.replace("MainTabs");
+  const handleLogin = async () => {
+    if (!username || !password) {
+      Alert.alert("Thông báo", "Vui lòng nhập tên đăng nhập và mật khẩu");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "https://vietsac.id.vn/api/auth/staff/login",
+        {
+          username: username,
+          password: password,
+        }
+      );
+
+      if (response.data.success) {
+        // Save token to AsyncStorage
+        await AsyncStorage.setItem("authToken", response.data.result.token);
+        await AsyncStorage.setItem(
+          "tokenExpiration",
+          response.data.result.expiration
+        );
+        const authToken = await AsyncStorage.getItem("authToken");
+        console.log("Auth Token from AsyncStorage:", authToken);
+        console.log("Login successful:", response.data.message);
+        navigation.replace("MainTabs");
+      } else {
+        Alert.alert("Thông báo", "Thông tin đăng nhập không chính xác");
+      }
+    } catch (error) {
+      Alert.alert(
+        "Thông báo",
+        "Vui lòng kiểm tra thông tin đăng nhập và thử lại."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,15 +95,15 @@ export default function LoginScreen({ navigation }) {
                 <View className="bg-white/20 rounded-2xl p-1">
                   <View className="flex-row items-center bg-white rounded-xl">
                     <View className="p-4">
-                      <Phone size={24} color="#ff7e5f" />
+                      <User size={24} color="#ff7e5f" />
                     </View>
                     <TextInput
                       className="flex-1 p-4 text-base text-gray-800"
-                      placeholder="Số điện thoại của bạn"
+                      placeholder="Tên đăng nhập"
                       placeholderTextColor="#999"
-                      keyboardType="phone-pad"
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
                     />
                   </View>
                 </View>
@@ -106,8 +145,11 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="bg-white rounded-xl mt-8 p-4 shadow-lg"
+                className={`${
+                  loading ? "bg-gray-300" : "bg-white"
+                } rounded-xl mt-8 p-4 shadow-lg`}
                 onPress={handleLogin}
+                disabled={loading}
                 style={{
                   elevation: 5,
                   shadowColor: "#000",
@@ -116,21 +158,14 @@ export default function LoginScreen({ navigation }) {
                   shadowRadius: 6,
                 }}
               >
-                <Text className="text-[#ff7e5f] text-center font-bold text-lg">
-                  ĐĂNG NHẬP
+                <Text
+                  className={`${
+                    loading ? "text-gray-500" : "text-[#ff7e5f]"
+                  } text-center font-bold text-lg`}
+                >
+                  {loading ? "ĐANG XỬ LÝ..." : "ĐĂNG NHẬP"}
                 </Text>
               </TouchableOpacity>
-
-              {/* <View className="flex-row justify-center mt-8">
-                <Text className="text-white opacity-80">
-                  Chưa có tài khoản?{" "}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("Register")}
-                >
-                  <Text className="text-white font-bold">Đăng ký ngay</Text>
-                </TouchableOpacity>
-              </View> */}
             </View>
           </KeyboardAvoidingView>
         </SafeAreaView>
