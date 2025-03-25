@@ -57,26 +57,31 @@ export default function OrderItem({ item, onRefresh }) {
   const renderItemContent = () => (
     <>
       {/* Status Badge */}
-      <View
-        className="absolute top-4 right-4 rounded-full px-3 py-1 flex-row items-center"
-        style={{ backgroundColor: `${getStatusColor(item.orderItemStatus)}20` }}
-      >
+      {item.type !== "Workshop" && (
         <View
-          className="w-2 h-2 rounded-full mr-1.5"
-          style={{ backgroundColor: getStatusColor(item.orderItemStatus) }}
-        />
-        <Text
-          className="text-sm font-medium"
-          style={{ color: getStatusColor(item.orderItemStatus) }}
+          className="absolute top-4 right-4 rounded-full px-3 py-1 flex-row items-center"
+          style={{
+            backgroundColor: `${getStatusColor(item.orderItemStatus)}20`,
+          }}
         >
-          {getStatusText(item.orderItemStatus)}
-        </Text>
-      </View>
+          <View
+            className="w-2 h-2 rounded-full mr-1.5"
+            style={{ backgroundColor: getStatusColor(item.orderItemStatus) }}
+          />
+          <Text
+            className="text-sm font-medium"
+            style={{ color: getStatusColor(item.orderItemStatus) }}
+          >
+            {getStatusText(item.orderItemStatus)}
+          </Text>
+        </View>
+      )}
 
       {/* Main content */}
       <Text className="text-lg font-semibold text-gray-800 pr-32">
         {item.name}
       </Text>
+
       <View className="flex-row justify-between mt-2">
         <Text className="text-sm text-gray-600">Số lượng: {item.quantity}</Text>
         <Text className="text-sm text-gray-600">
