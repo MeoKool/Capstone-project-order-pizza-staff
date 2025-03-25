@@ -7,6 +7,7 @@ export default function GuestInfoCard({ registerInfo, onNext }) {
     <>
       <View
         style={{
+          marginTop: 100,
           backgroundColor: "white",
           padding: 24,
           borderRadius: 16,
