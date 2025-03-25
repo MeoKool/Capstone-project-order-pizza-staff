@@ -13,7 +13,7 @@ import ToDoWeekScreen from "./src/screens/ToDoWeek";
 import SwapScreen from "./src/screens/SwapScreen";
 import TablesScreen from "./src/screens/TablesScreen";
 import TableDetailsScreen from "./src/screens/OrderDetailScreen";
-import QRCheckinScreen from "./src/screens/ScanQRCheckIn";
+import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -34,7 +34,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Store"
-        component={QRCheckinScreen}
+        component={QRCheckInScreen}
         options={{ tabBarLabel: "Checkin" }}
       />
       <Tab.Screen
