@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, Text, Animated } from "react-native";
-import { Home, SquareMenu, Store, User } from "lucide-react-native";
+import { Home, SquareMenu, QrCode, User } from "lucide-react-native";
 
 const BottomBar = ({ state, descriptors, navigation }) => {
   if (!state) return null;
@@ -8,7 +8,7 @@ const BottomBar = ({ state, descriptors, navigation }) => {
   const tabs = [
     { key: "Home", icon: Home, label: "Trang chủ" },
     { key: "Tables", icon: SquareMenu, label: "Bàn" },
-    // { key: "Store", icon: Store, label: "Cửa hàng" },
+    { key: "Store", icon: QrCode, label: "Checkin" },
     { key: "Profile", icon: User, label: "Cá nhân" },
   ];
 
