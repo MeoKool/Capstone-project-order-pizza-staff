@@ -82,5 +82,5 @@ Dự án mang tính học thuật – phục vụ môn học **Capstone Project*
 
 ## 👥 Nhóm phát triển
 
-- 👨‍💻 [MeoKool](https://github.com/MeoKool) - Developer chính
+- 👨‍💻 [MeoKool](https://github.com/MeoKool) 
 - 🎓 Capstone Project
