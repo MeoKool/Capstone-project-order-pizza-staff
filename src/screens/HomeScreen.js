@@ -44,7 +44,6 @@ export default function HomeScreen({ navigation }) {
             <View className="px-6 mt-8">
               <TodaySchedule />
             </View>
-            <MainFeatures navigation={navigation} />
           </Animated.ScrollView>
 
           <BottomBar
