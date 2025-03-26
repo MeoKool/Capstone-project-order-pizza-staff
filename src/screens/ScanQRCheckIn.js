@@ -45,17 +45,26 @@ export default function QRCheckInScreen({ navigation }) {
         `https://vietsac.id.vn/api/workshop-register/get-by-code/${data}`
       );
       if (!res.data.success) throw new Error("QR không hợp lệ.");
-      const register = res.data.result;
-      setRegisterInfo({ ...register, code: data });
 
+      const register = res.data.result;
+
+      // Gán thông tin và cờ đã check-in
+      setRegisterInfo({ ...register, code: data });
+      setStep("checkedIn");
+
+      // Nếu đã có tableId thì không gọi API check-in nữa
+      if (register.tableId) {
+        return; // chỉ hiển thị thông tin
+      }
+
+      // Nếu chưa check-in thì thực hiện check-in
       await axios.post(
         `https://vietsac.id.vn/api/workshop-register/check-in-workshop`,
         { workshopRegisterId: register.id }
       );
-
-      setStep("checkedIn");
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể xử lý mã QR.");
+      setScanned(false);
     } finally {
       setLoading(false);
     }
@@ -183,7 +192,11 @@ export default function QRCheckInScreen({ navigation }) {
             )}
 
             {step === "checkedIn" && registerInfo && !loading && (
-              <GuestInfoCard registerInfo={registerInfo} onNext={fetchTables} />
+              <GuestInfoCard
+                registerInfo={registerInfo}
+                onNext={fetchTables}
+                isAlreadyCheckedIn={!!registerInfo.tableId}
+              />
             )}
 
             {step === "selectTable" && (

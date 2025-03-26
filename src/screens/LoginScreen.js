@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Lock, User, Eye, EyeOff } from "lucide-react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
@@ -24,8 +25,11 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert("Thông báo", "Vui lòng nhập tên đăng nhập và mật khẩu");
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      Alert.alert("Notification", "Please enter your username and password");
       return;
     }
 
@@ -34,29 +38,53 @@ export default function LoginScreen({ navigation }) {
       const response = await axios.post(
         "https://vietsac.id.vn/api/auth/staff/login",
         {
-          username: username,
-          password: password,
+          username: trimmedUsername,
+          password: trimmedPassword,
         }
       );
 
       if (response.data.success) {
-        // Save token to AsyncStorage
-        await AsyncStorage.setItem("authToken", response.data.result.token);
-        await AsyncStorage.setItem(
-          "tokenExpiration",
-          response.data.result.expiration
+        const token = response.data.result.token;
+        const expiration = response.data.result.expiration;
+
+        await AsyncStorage.setItem("authToken", token);
+        await AsyncStorage.setItem("tokenExpiration", expiration);
+
+        const decoded = jwtDecode(token);
+        const staffId = decoded.StaffId;
+
+        const staffResponse = await axios.get(
+          `https://vietsac.id.vn/api/staffs/${staffId}`
         );
-        const authToken = await AsyncStorage.getItem("authToken");
-        console.log("Auth Token from AsyncStorage:", authToken);
-        console.log("Login successful:", response.data.message);
-        navigation.replace("MainTabs");
+
+        if (staffResponse.data.success) {
+          const staff = staffResponse.data.result;
+
+          if (staff.username)
+            await AsyncStorage.setItem("staffUsername", staff.username);
+          if (staff.fullName)
+            await AsyncStorage.setItem("staffFullName", staff.fullName);
+          if (staff.phone)
+            await AsyncStorage.setItem("staffPhone", staff.phone);
+          if (staff.email)
+            await AsyncStorage.setItem("staffEmail", staff.email);
+          if (staff.staffType)
+            await AsyncStorage.setItem("staffType", staff.staffType);
+          if (staff.status)
+            await AsyncStorage.setItem("staffStatus", staff.status);
+
+          console.log("Staff info saved:", staff);
+        }
+
+        navigation.replace("MainTabs"); // Thử thay bằng navigation.navigate("MainTabs")
       } else {
-        Alert.alert("Thông báo", "Thông tin đăng nhập không chính xác");
+        Alert.alert("Notification", "Login information is incorrect");
       }
     } catch (error) {
+      console.error("Login error:", error.response?.data || error.message);
       Alert.alert(
         "Thông báo",
-        "Vui lòng kiểm tra thông tin đăng nhập và thử lại."
+        "Please check your login information and try again."
       );
     } finally {
       setLoading(false);

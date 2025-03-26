@@ -18,9 +18,45 @@ import {
   Edit3,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
+  const [staffInfo, setStaffInfo] = useState({
+    username: "",
+    fullName: "",
+    phone: "",
+    email: "",
+    staffType: "",
+    status: "",
+  });
+
+  useEffect(() => {
+    const loadStaffInfo = async () => {
+      try {
+        const username = await AsyncStorage.getItem("staffUsername");
+        const fullName = await AsyncStorage.getItem("staffFullName");
+        const phone = await AsyncStorage.getItem("staffPhone");
+        const email = await AsyncStorage.getItem("staffEmail");
+        const staffType = await AsyncStorage.getItem("staffType");
+        const status = await AsyncStorage.getItem("staffStatus");
+
+        setStaffInfo({
+          username: username || "",
+          fullName: fullName || "",
+          phone: phone || "",
+          email: email || "",
+          staffType: staffType || "",
+          status: status || "",
+        });
+      } catch (error) {
+        console.error("Error loading staff info:", error);
+      }
+    };
+
+    loadStaffInfo();
+  }, []);
 
   const profileOptions = [
     {
@@ -52,12 +88,24 @@ export default function ProfileScreen() {
       bgColor: "#FFE8E8",
     },
   ];
-
-  const handleOptionPress = (screen) => {
+  const handleOptionPress = async (screen) => {
     if (screen === "Logout") {
-      // Handle logout logic here
-      navigation.replace("Login");
+      try {
+        // Hiển thị xác nhận trước khi đăng xuất
+        const confirmLogout = window.confirm(
+          "Bạn có chắc chắn muốn đăng xuất?"
+        );
+        if (confirmLogout) {
+          // Xóa toàn bộ dữ liệu trong AsyncStorage khi đăng xuất
+          await AsyncStorage.clear();
+          // Chuyển hướng về màn hình Login
+          navigation.replace("Login");
+        }
+      } catch (error) {
+        console.error("Error during logout:", error);
+      }
     } else {
+      // Điều hướng đến các màn hình khác nếu không phải Logout
       navigation.navigate(screen);
     }
   };
@@ -83,7 +131,7 @@ export default function ProfileScreen() {
                 <View>
                   <Text className="text-white text-3xl font-bold">Hồ sơ</Text>
                   <Text className="text-white/80 text-lg font-medium mt-1">
-                    Trương Sỹ Quảng
+                    {staffInfo.fullName || "Tên nhân viên"}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -113,10 +161,24 @@ export default function ProfileScreen() {
                   />
                   <View>
                     <Text className="text-[#333] text-xl font-bold mb-1">
-                      Trương Sỹ Quảng
+                      {staffInfo.fullName || "Tên nhân viên"}
                     </Text>
-                    <Text className="text-[#666] text-base">ID: 123456</Text>
-                    <Text className="text-[#666] text-base">Nhân viên</Text>
+                    <Text className="text-[#666] text-base">
+                      ID: {staffInfo.username || "N/A"}
+                    </Text>
+                    <Text className="text-[#666] text-base">
+                      {staffInfo.staffType || "Loại nhân viên"}
+                    </Text>
+                    {staffInfo.email && (
+                      <Text className="text-[#666] text-base">
+                        Email: {staffInfo.email}
+                      </Text>
+                    )}
+                    {staffInfo.phone && (
+                      <Text className="text-[#666] text-base">
+                        SĐT: {staffInfo.phone}
+                      </Text>
+                    )}
                   </View>
                 </View>
                 <TouchableOpacity

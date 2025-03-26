@@ -2,7 +2,11 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function GuestInfoCard({ registerInfo, onNext }) {
+export default function GuestInfoCard({
+  registerInfo,
+  onNext,
+  isAlreadyCheckedIn,
+}) {
   return (
     <>
       <View
@@ -65,8 +69,9 @@ export default function GuestInfoCard({ registerInfo, onNext }) {
       </View>
 
       <TouchableOpacity
+        disabled={isAlreadyCheckedIn}
         style={{
-          backgroundColor: "white",
+          backgroundColor: isAlreadyCheckedIn ? "#ddd" : "white",
           borderRadius: 9999,
           paddingVertical: 16,
           alignItems: "center",
@@ -75,11 +80,18 @@ export default function GuestInfoCard({ registerInfo, onNext }) {
           shadowOpacity: 0.1,
           shadowRadius: 4,
           elevation: 2,
+          opacity: isAlreadyCheckedIn ? 0.6 : 1,
         }}
         onPress={onNext}
       >
-        <Text style={{ color: "#ff7e5f", fontWeight: "bold", fontSize: 16 }}>
-          Tiếp tục chọn bàn
+        <Text
+          style={{
+            color: isAlreadyCheckedIn ? "#000" : "#ff7e5f",
+            fontWeight: "bold",
+            fontSize: 16,
+          }}
+        >
+          {isAlreadyCheckedIn ? "Đã được gán bàn" : "Tiếp tục chọn bàn"}
         </Text>
       </TouchableOpacity>
     </>
