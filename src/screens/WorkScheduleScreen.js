@@ -1,7 +1,17 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { SafeAreaView, StatusBar, Animated, Alert } from "react-native";
+import {
+  SafeAreaView,
+  StatusBar,
+  Animated,
+  Alert,
+  View,
+  Text,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Info } from "lucide-react-native";
 import BottomBar from "../components/BottomBar";
 import Header from "../components/Header";
 import WeekCalendar from "../components/RegisterWork/WeekCalendar";
@@ -18,6 +28,10 @@ export default function WorkScheduleScreen({ navigation }) {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [staffId, setStaffId] = useState(null);
+  const [configs, setConfigs] = useState({
+    registrationWeekLimit: 1,
+    registrationCutoffDay: 1,
+  });
 
   // Get staff ID from AsyncStorage
   useEffect(() => {
@@ -28,7 +42,6 @@ export default function WorkScheduleScreen({ navigation }) {
           setStaffId(id);
         } else {
           console.warn("Staff ID not found in AsyncStorage");
-          // You might want to redirect to login if staffId is not found
         }
       } catch (error) {
         console.error("Error getting staff ID:", error);
@@ -38,25 +51,84 @@ export default function WorkScheduleScreen({ navigation }) {
     getStaffId();
   }, []);
 
-  // Generate dates for the next week
+  // Fetch configuration data
   useEffect(() => {
+    fetchConfigs();
+  }, []);
+
+  // Fetch configuration data from API
+  const fetchConfigs = async () => {
+    try {
+      const response = await fetch("https://vietsac.id.vn/api/configs");
+      const data = await response.json();
+
+      if (data.success) {
+        const configItems = data.result.items;
+
+        // Find registration week limit
+        const weekLimitConfig = configItems.find(
+          (item) =>
+            item.configType === "REGISTRATION_WEEK_LIMIT" ||
+            item.key === "REGISTRATION_WEEK_LIMIT"
+        );
+
+        // Find registration cutoff day
+        const cutoffDayConfig = configItems.find(
+          (item) =>
+            item.configType === "REGISTRATION_CUTOFF_DAY" ||
+            item.key === "REGISTRATION_CUTOFF_DAY"
+        );
+
+        const weekLimit = weekLimitConfig
+          ? Number.parseInt(weekLimitConfig.value)
+          : 1;
+        const cutoffDay = cutoffDayConfig
+          ? Number.parseInt(cutoffDayConfig.value)
+          : 1;
+
+        setConfigs({
+          registrationWeekLimit: weekLimit,
+          registrationCutoffDay: cutoffDay,
+        });
+
+        // Generate dates based on the configuration
+        generateDatesBasedOnConfig(weekLimit, cutoffDay);
+      }
+    } catch (error) {
+      console.error("Error fetching configs:", error);
+      // Use default values if config fetch fails
+      generateDatesBasedOnConfig(1, 1);
+    }
+  };
+
+  // Generate dates based on configuration
+  const generateDatesBasedOnConfig = (weekLimit, cutoffDay) => {
     const dates = [];
     const today = new Date();
 
-    // Generate 7 days starting from today for the next week
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
+    // Add cutoff days to today to get the start date
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + cutoffDay);
+
+    // Calculate how many days to show (weekLimit * 7)
+    const daysToShow = weekLimit * 7;
+
+    // Generate dates
+    for (let i = 0; i < daysToShow; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
       dates.push(date);
     }
 
     setWeekDates(dates);
-    setSelectedDate(today);
-  }, []);
+    setSelectedDate(dates[0]); // Select the first available date
+  };
 
   // Fetch available slots when date changes
   useEffect(() => {
-    fetchAvailableSlots();
+    if (selectedDate) {
+      fetchAvailableSlots();
+    }
   }, [selectedDate]);
 
   // Format date to YYYY-MM-DD
@@ -145,7 +217,7 @@ export default function WorkScheduleScreen({ navigation }) {
       });
     });
 
-    return total;
+    return total.toFixed(1);
   };
 
   // Register for selected slots
@@ -286,6 +358,25 @@ export default function WorkScheduleScreen({ navigation }) {
               title="Đăng ký giờ làm việc"
               headerHeight={headerHeight}
             />
+
+            {/* Registration Info */}
+            <View className="px-6 mt-2 mb-2">
+              <View className="bg-white/20 rounded-xl p-3">
+                <View className="flex-row items-center">
+                  <Info size={18} color="white" />
+                  <Text className="text-white ml-2 font-medium">
+                    Thông tin đăng ký
+                  </Text>
+                </View>
+                <Text className="text-white mt-1 opacity-90">
+                  Bạn có thể đăng ký lịch làm việc trước{" "}
+                  {configs.registrationWeekLimit} tuần
+                </Text>
+                <Text className="text-white opacity-90">
+                  Thời gian đăng ký trước {configs.registrationCutoffDay} ngày
+                </Text>
+              </View>
+            </View>
 
             {/* Week Calendar Component */}
             <WeekCalendar

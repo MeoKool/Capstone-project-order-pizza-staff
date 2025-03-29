@@ -20,7 +20,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
 
   // Check if a date is selected
   const isDateSelected = (date) => {
-    return date.toDateString() === selectedDate.toDateString();
+    return selectedDate && date.toDateString() === selectedDate.toDateString();
   };
 
   return (
@@ -46,7 +46,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                 isDateSelected(date) ? "text-orange-500" : "text-white"
               }`}
             >
-              {DAYS_OF_WEEK[date.getDay()].substring(0, 5)}
+              {DAYS_OF_WEEK[date.getDay()]}
             </Text>
             <Text
               className={`text-lg font-bold mt-1 ${
