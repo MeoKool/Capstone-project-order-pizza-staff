@@ -27,7 +27,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import BottomBar from "../components/BottomBar";
 import MainFeatures from "../components/HomePage/MainFeatures";
 
 const { width } = Dimensions.get("window");
@@ -74,10 +73,7 @@ export default function ProfileScreen() {
     if (screen === "Logout") {
       try {
         Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-          {
-            text: "Hủy",
-            style: "cancel",
-          },
+          { text: "Hủy", style: "cancel" },
           {
             text: "Đăng xuất",
             style: "destructive",
@@ -97,7 +93,6 @@ export default function ProfileScreen() {
 
   const statusColor = staffInfo.status === "active" ? "#4CAF50" : "#FF9800";
 
-  // Animation values
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: [200, 120],
@@ -129,7 +124,6 @@ export default function ProfileScreen() {
             paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
           }}
         >
-          {/* Animated Header */}
           <Animated.View
             style={{
               height: headerHeight,
@@ -181,9 +175,8 @@ export default function ProfileScreen() {
             )}
             scrollEventThrottle={16}
           >
-            <View style={{ height: 120 }} /> {/* Spacer for fixed header */}
+            <View style={{ height: 120 }} />
             <View className="px-6 pt-6">
-              {/* Profile Card */}
               <View
                 className="bg-white rounded-3xl p-6 shadow-lg mb-8"
                 style={{
@@ -196,7 +189,6 @@ export default function ProfileScreen() {
                   overflow: "hidden",
                 }}
               >
-                {/* Decorative elements */}
                 <View
                   style={{
                     position: "absolute",
@@ -219,7 +211,6 @@ export default function ProfileScreen() {
                     backgroundColor: "rgba(254, 180, 123, 0.1)",
                   }}
                 />
-
                 <View className="flex-row items-center mb-6">
                   <View
                     style={{
@@ -237,10 +228,7 @@ export default function ProfileScreen() {
                           uri: "/placeholder.svg?height=100&width=100",
                         }}
                         className="w-24 h-24 rounded-full"
-                        style={{
-                          borderWidth: 3,
-                          borderColor: "#ff7e5f",
-                        }}
+                        style={{ borderWidth: 3, borderColor: "#ff7e5f" }}
                       />
                     ) : (
                       <View
@@ -298,36 +286,14 @@ export default function ProfileScreen() {
                     )}
                   </View>
                 </View>
-                <TouchableOpacity
-                  className="rounded-full py-3.5 px-6 self-center w-full flex-row items-center justify-center"
-                  onPress={() => navigation.navigate("EditProfile")}
-                  style={{
-                    elevation: 5,
-                    shadowColor: "#ff7e5f",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    backgroundColor: "#ff7e5f",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.2)",
-                  }}
-                >
-                  <Edit3 size={18} color="white" />
-                  <Text className="text-white font-bold ml-2 tracking-wide">
-                    Chỉnh sửa hồ sơ
-                  </Text>
-                </TouchableOpacity>
               </View>
 
-              {/* Main Features Section */}
               <MainFeatures navigation={navigation} />
 
-              {/* Enhanced Settings Section */}
               <View className="mt-8 mb-6">
                 <Text className="text-white text-xl font-bold mb-4">
                   Cài đặt tài khoản
                 </Text>
-
                 <View
                   className="bg-white rounded-3xl shadow-lg overflow-hidden"
                   style={{
@@ -338,7 +304,6 @@ export default function ProfileScreen() {
                     shadowRadius: 15,
                   }}
                 >
-                  {/* Header with decorative elements */}
                   <View className="px-6 pt-5 pb-2 border-b border-gray-100 relative overflow-hidden">
                     <View
                       style={{
@@ -369,10 +334,7 @@ export default function ProfileScreen() {
                       Quản lý tài khoản và thiết lập cá nhân
                     </Text>
                   </View>
-
-                  {/* Settings Groups */}
                   <View className="p-4">
-                    {/* Account Group */}
                     <View className="mb-4">
                       <View className="flex-row items-center mb-3 px-2">
                         <View className="w-2 h-2 rounded-full bg-[#ff7e5f] mr-2" />
@@ -380,7 +342,6 @@ export default function ProfileScreen() {
                           Tài khoản
                         </Text>
                       </View>
-
                       <TouchableOpacity
                         className="flex-row items-center bg-white rounded-2xl p-4 mb-2"
                         onPress={() => handleOptionPress("AccountSettings")}
@@ -429,7 +390,6 @@ export default function ProfileScreen() {
                           <ChevronRight size={18} color="#6BCB77" />
                         </View>
                       </TouchableOpacity>
-
                       <TouchableOpacity
                         className="flex-row items-center bg-white rounded-2xl p-4"
                         onPress={() => handleOptionPress("ChangePassword")}
@@ -479,8 +439,6 @@ export default function ProfileScreen() {
                         </View>
                       </TouchableOpacity>
                     </View>
-
-                    {/* Support Group */}
                     <View className="mb-4">
                       <View className="flex-row items-center mb-3 px-2">
                         <View className="w-2 h-2 rounded-full bg-[#4D96FF] mr-2" />
@@ -488,7 +446,6 @@ export default function ProfileScreen() {
                           Hỗ trợ
                         </Text>
                       </View>
-
                       <TouchableOpacity
                         className="flex-row items-center bg-white rounded-2xl p-4"
                         onPress={() => handleOptionPress("SupportCenter")}
@@ -538,8 +495,6 @@ export default function ProfileScreen() {
                         </View>
                       </TouchableOpacity>
                     </View>
-
-                    {/* About Group */}
                     <View className="mb-4">
                       <View className="flex-row items-center mb-3 px-2">
                         <View className="w-2 h-2 rounded-full bg-[#feb47b] mr-2" />
@@ -547,7 +502,6 @@ export default function ProfileScreen() {
                           Thông tin
                         </Text>
                       </View>
-
                       <TouchableOpacity
                         className="flex-row items-center bg-white rounded-2xl p-4"
                         activeOpacity={0.7}
@@ -596,8 +550,6 @@ export default function ProfileScreen() {
                         </View>
                       </TouchableOpacity>
                     </View>
-
-                    {/* Logout Button */}
                     <View className="mt-6">
                       <TouchableOpacity
                         className="flex-row items-center justify-center bg-white rounded-2xl p-4"
@@ -618,11 +570,10 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </View>
-
-              {/* App Version */}
               <View className="items-center mt-4 mb-8">
                 <Text className="text-white/70 text-sm font-medium">
-                  © 2023 Company Name
+                  © Service Link System to enhance operations in Pizza
+                  restaurant.
                 </Text>
               </View>
             </View>

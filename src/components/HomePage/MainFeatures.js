@@ -4,7 +4,7 @@ import { Calendar, Clock, RefreshCcw, ChevronRight } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
-const cardWidth = (width - 48 - 16) / 2; // Accounting for padding and gap
+const cardWidth = (width - 48 - 16) / 2;
 
 const mainFeatures = [
   {
@@ -42,12 +42,10 @@ const mainFeatures = [
 ];
 
 const MainFeatures = ({ navigation }) => (
-  <View className="mt-4 ">
+  <View className="mt-4">
     <View className="flex-row justify-between items-center mb-4">
       <Text className="text-white text-xl font-bold">Chức năng chính</Text>
     </View>
-
-    {/* Card Grid Layout */}
     <View className="flex-row flex-wrap justify-between">
       {mainFeatures.map((feature, index) => (
         <TouchableOpacity
@@ -89,7 +87,6 @@ const MainFeatures = ({ navigation }) => (
             >
               <feature.icon size={22} color="white" />
             </View>
-
             <View>
               <Text
                 className="text-white font-bold text-base"
