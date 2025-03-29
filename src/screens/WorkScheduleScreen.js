@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { SafeAreaView, StatusBar, Animated, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "../components/BottomBar";
 import Header from "../components/Header";
 import WeekCalendar from "../components/RegisterWork/WeekCalendar";
@@ -8,52 +9,103 @@ import TimeSlotSelector from "../components/RegisterWork/TimeSlotSelector";
 import RegistrationSummary from "../components/RegisterWork/RegistrationSummary";
 import SubmitButton from "../components/RegisterWork/SubmitButton";
 
-// Days of the week in Vietnamese
-const DAYS_OF_WEEK = [
-  "Chủ Nhật",
-  "Thứ Hai",
-  "Thứ Ba",
-  "Thứ Tư",
-  "Thứ Năm",
-  "Thứ Sáu",
-  "Thứ Bảy",
-];
-
-// Time slot options for morning, afternoon, and evening shifts
-const TIME_SLOTS = [
-  { id: 1, time: "07:00 - 11:00", period: "Sáng" },
-  { id: 2, time: "11:00 - 15:00", period: "Trưa" },
-  { id: 3, time: "15:00 - 19:00", period: "Chiều" },
-  { id: 4, time: "19:00 - 23:00", period: "Tối" },
-];
-
 export default function WorkScheduleScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("home");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSlots, setSelectedSlots] = useState({});
   const [weekDates, setWeekDates] = useState([]);
   const [scrollY] = useState(new Animated.Value(0));
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [staffId, setStaffId] = useState(null);
 
-  // Generate dates for the current week
+  // Get staff ID from AsyncStorage
+  useEffect(() => {
+    const getStaffId = async () => {
+      try {
+        const id = await AsyncStorage.getItem("staffId");
+        if (id) {
+          setStaffId(id);
+        } else {
+          console.warn("Staff ID not found in AsyncStorage");
+          // You might want to redirect to login if staffId is not found
+        }
+      } catch (error) {
+        console.error("Error getting staff ID:", error);
+      }
+    };
+
+    getStaffId();
+  }, []);
+
+  // Generate dates for the next week
   useEffect(() => {
     const dates = [];
     const today = new Date();
-    const day = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-    // Calculate the first day of the week (Sunday)
-    const firstDay = new Date(today);
-    firstDay.setDate(today.getDate() - day);
-
-    // Generate 7 days starting from the first day of the week
+    // Generate 7 days starting from today for the next week
     for (let i = 0; i < 7; i++) {
-      const date = new Date(firstDay);
-      date.setDate(firstDay.getDate() + i);
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
       dates.push(date);
     }
 
     setWeekDates(dates);
     setSelectedDate(today);
   }, []);
+
+  // Fetch available slots when date changes
+  useEffect(() => {
+    fetchAvailableSlots();
+  }, [selectedDate]);
+
+  // Format date to YYYY-MM-DD
+  const formatDateForAPI = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // Fetch available slots from API
+  const fetchAvailableSlots = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://vietsac.id.vn/api/working-slots");
+      const data = await response.json();
+
+      if (data.success) {
+        // Filter slots for the selected day
+        const dayName = getDayName(selectedDate.getDay());
+        const filteredSlots = data.result.items.filter(
+          (slot) => slot.dayName === dayName
+        );
+
+        setAvailableSlots(filteredSlots);
+      } else {
+        Alert.alert("Lỗi", "Không thể tải ca làm việc");
+      }
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      Alert.alert("Lỗi", "Không thể kết nối đến máy chủ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get Vietnamese day name
+  const getDayName = (dayIndex) => {
+    const days = [
+      "Chủ nhật",
+      "Thứ hai",
+      "Thứ ba",
+      "Thứ tư",
+      "Thứ năm",
+      "Thứ sáu",
+      "Thứ bảy",
+    ];
+    return days[dayIndex];
+  };
 
   // Toggle selection of a time slot for a specific date
   const toggleTimeSlot = (date, slotId) => {
@@ -77,13 +129,79 @@ export default function WorkScheduleScreen({ navigation }) {
     });
   };
 
-  // Count total selected hours
+  // Calculate total hours from selected slots
   const getTotalHours = () => {
     let total = 0;
-    Object.values(selectedSlots).forEach((slots) => {
-      total += slots.length * 4; // Each slot is 4 hours
+
+    Object.entries(selectedSlots).forEach(([dateStr, slotIds]) => {
+      slotIds.forEach((slotId) => {
+        const slot = availableSlots.find((s) => s.id === slotId);
+        if (slot) {
+          const start = new Date(`2000-01-01T${slot.shiftStart}`);
+          const end = new Date(`2000-01-01T${slot.shiftEnd}`);
+          const hours = (end - start) / (1000 * 60 * 60);
+          total += hours;
+        }
+      });
     });
+
     return total;
+  };
+
+  // Register for selected slots
+  const registerSlots = async () => {
+    if (!staffId) {
+      Alert.alert("Lỗi", "Không tìm thấy ID nhân viên");
+      return;
+    }
+
+    const registrations = [];
+
+    Object.entries(selectedSlots).forEach(([dateStr, slotIds]) => {
+      const date = new Date(dateStr);
+      const formattedDate = formatDateForAPI(date);
+
+      slotIds.forEach((slotId) => {
+        registrations.push({
+          workingDate: formattedDate,
+          staffId: staffId,
+          workingSlotId: slotId,
+        });
+      });
+    });
+
+    try {
+      setLoading(true);
+
+      // Register each selected slot
+      for (const registration of registrations) {
+        const response = await fetch(
+          "https://vietsac.id.vn/api/working-slot-registers",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(registration),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.message || "Đăng ký không thành công");
+        }
+      }
+
+      Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
+      setSelectedSlots({});
+      navigation.navigate("MainTabs");
+    } catch (error) {
+      console.error("Error registering slots:", error);
+      Alert.alert("Lỗi", error.message || "Không thể đăng ký ca làm việc");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Submit the work schedule
@@ -95,12 +213,23 @@ export default function WorkScheduleScreen({ navigation }) {
 
     // Format the selected slots for display
     const formattedSchedule = Object.entries(selectedSlots)
-      .map(([dateStr, slots]) => {
+      .map(([dateStr, slotIds]) => {
         const date = new Date(dateStr);
-        const dayName = DAYS_OF_WEEK[date.getDay()];
+        const dayName = getDayName(date.getDay());
         const formattedDate = `${date.getDate()}/${date.getMonth() + 1}`;
-        const timeSlots = slots
-          .map((slotId) => TIME_SLOTS.find((slot) => slot.id === slotId).time)
+
+        const timeSlots = slotIds
+          .map((slotId) => {
+            const slot = availableSlots.find((s) => s.id === slotId);
+            if (slot) {
+              return `${slot.shiftStart.substring(
+                0,
+                5
+              )} - ${slot.shiftEnd.substring(0, 5)}`;
+            }
+            return "";
+          })
+          .filter(Boolean)
           .join(", ");
 
         return `${dayName} (${formattedDate}): ${timeSlots}`;
@@ -117,10 +246,7 @@ export default function WorkScheduleScreen({ navigation }) {
         },
         {
           text: "Xác nhận",
-          onPress: () => {
-            Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
-            navigation.navigate("MainTabs");
-          },
+          onPress: registerSlots,
         },
       ]
     );
@@ -173,6 +299,8 @@ export default function WorkScheduleScreen({ navigation }) {
               selectedDate={selectedDate}
               selectedSlots={selectedSlots}
               toggleTimeSlot={toggleTimeSlot}
+              availableSlots={availableSlots}
+              loading={loading}
             />
 
             {/* Registration Summary Component */}
@@ -182,7 +310,7 @@ export default function WorkScheduleScreen({ navigation }) {
             />
 
             {/* Submit Button Component */}
-            <SubmitButton onPress={handleSubmit} />
+            <SubmitButton onPress={handleSubmit} disabled={loading} />
           </Animated.ScrollView>
 
           <BottomBar

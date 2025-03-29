@@ -38,11 +38,6 @@ const RegistrationSummary = ({ selectedSlots, getTotalHours }) => {
             {getTotalHours()} giờ
           </Text>
         </View>
-
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600">Trạng thái:</Text>
-          <Text className="font-semibold text-blue-500">Chờ xác nhận</Text>
-        </View>
       </View>
     </View>
   );

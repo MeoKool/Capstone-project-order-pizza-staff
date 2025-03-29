@@ -1,28 +1,33 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Calendar, Clock, Check, Plus } from "lucide-react-native";
 
 const DAYS_OF_WEEK = [
-  "Chủ Nhật",
-  "Thứ Hai",
-  "Thứ Ba",
-  "Thứ Tư",
-  "Thứ Năm",
-  "Thứ Sáu",
-  "Thứ Bảy",
+  "Chủ nhật",
+  "Thứ hai",
+  "Thứ ba",
+  "Thứ tư",
+  "Thứ năm",
+  "Thứ sáu",
+  "Thứ bảy",
 ];
 
-const TIME_SLOTS = [
-  { id: 1, time: "07:00 - 11:00", period: "Sáng" },
-  { id: 2, time: "11:00 - 15:00", period: "Trưa" },
-  { id: 3, time: "15:00 - 19:00", period: "Chiều" },
-  { id: 4, time: "19:00 - 23:00", period: "Tối" },
-];
-
-const TimeSlotSelector = ({ selectedDate, selectedSlots, toggleTimeSlot }) => {
+const TimeSlotSelector = ({
+  selectedDate,
+  selectedSlots,
+  toggleTimeSlot,
+  availableSlots,
+  loading,
+}) => {
   // Check if a time slot is selected for a specific date
   const isSlotSelected = (date, slotId) => {
     const dateStr = date.toDateString();
     return selectedSlots[dateStr] && selectedSlots[dateStr].includes(slotId);
+  };
+
+  // Format time from 24-hour format to 12-hour format
+  const formatTime = (time) => {
+    if (!time) return "";
+    return time.substring(0, 5); // Just take HH:MM part
   };
 
   return (
@@ -48,49 +53,67 @@ const TimeSlotSelector = ({ selectedDate, selectedSlots, toggleTimeSlot }) => {
           shadowRadius: 8,
         }}
       >
-        {TIME_SLOTS.map((slot, index) => {
-          const isSelected = isSlotSelected(selectedDate, slot.id);
-          return (
-            <TouchableOpacity
-              key={index}
-              className={`flex-row items-center p-4 ${
-                index !== TIME_SLOTS.length - 1
-                  ? "border-b border-gray-100"
-                  : ""
-              } ${isSelected ? "bg-orange-50" : ""}`}
-              onPress={() => toggleTimeSlot(selectedDate, slot.id)}
-            >
-              <View
-                className={`w-12 h-12 rounded-full items-center justify-center ${
-                  isSelected ? "bg-orange-100" : "bg-gray-100"
-                }`}
+        {loading ? (
+          <View className="p-8 items-center">
+            <ActivityIndicator size="large" color="#FF6B6B" />
+            <Text className="mt-2 text-gray-500">Đang tải ca làm việc...</Text>
+          </View>
+        ) : availableSlots.length === 0 ? (
+          <View className="p-8 items-center">
+            <Text className="text-gray-500">
+              Không có ca làm việc cho ngày này
+            </Text>
+          </View>
+        ) : (
+          availableSlots.map((slot, index) => {
+            const isSelected = isSlotSelected(selectedDate, slot.id);
+            return (
+              <TouchableOpacity
+                key={slot.id}
+                className={`flex-row items-center p-4 ${
+                  index !== availableSlots.length - 1
+                    ? "border-b border-gray-100"
+                    : ""
+                } ${isSelected ? "bg-orange-50" : ""}`}
+                onPress={() => toggleTimeSlot(selectedDate, slot.id)}
               >
-                <Clock size={24} color={isSelected ? "#FF6B6B" : "#9CA3AF"} />
-              </View>
-              <View className="ml-4 flex-1">
-                <Text
-                  className={`font-semibold text-base ${
-                    isSelected ? "text-orange-500" : "text-gray-800"
+                <View
+                  className={`w-12 h-12 rounded-full items-center justify-center ${
+                    isSelected ? "bg-orange-100" : "bg-gray-100"
                   }`}
                 >
-                  {slot.time}
-                </Text>
-                <Text className="text-gray-500 text-sm">Ca {slot.period}</Text>
-              </View>
-              <View
-                className={`w-8 h-8 rounded-full items-center justify-center ${
-                  isSelected ? "bg-orange-500" : "bg-gray-200"
-                }`}
-              >
-                {isSelected ? (
-                  <Check size={18} color="white" />
-                ) : (
-                  <Plus size={18} color="#9CA3AF" />
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                  <Clock size={24} color={isSelected ? "#FF6B6B" : "#9CA3AF"} />
+                </View>
+                <View className="ml-4 flex-1">
+                  <Text
+                    className={`font-semibold text-base ${
+                      isSelected ? "text-orange-500" : "text-gray-800"
+                    }`}
+                  >
+                    {formatTime(slot.shiftStart)} - {formatTime(slot.shiftEnd)}
+                  </Text>
+                  <Text className="text-gray-500 text-sm">
+                    {slot.shiftName}
+                  </Text>
+                  <Text className="text-gray-400 text-xs">
+                    Cần {slot.capacity} nhân viên
+                  </Text>
+                </View>
+                <View
+                  className={`w-8 h-8 rounded-full items-center justify-center ${
+                    isSelected ? "bg-orange-500" : "bg-gray-200"
+                  }`}
+                >
+                  {isSelected ? (
+                    <Check size={18} color="white" />
+                  ) : (
+                    <Plus size={18} color="#9CA3AF" />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
     </View>
   );

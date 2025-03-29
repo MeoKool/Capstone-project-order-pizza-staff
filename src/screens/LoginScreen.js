@@ -72,6 +72,7 @@ export default function LoginScreen({ navigation }) {
             await AsyncStorage.setItem("staffType", staff.staffType);
           if (staff.status)
             await AsyncStorage.setItem("staffStatus", staff.status);
+          if (staff.id) await AsyncStorage.setItem("staffId", staff.id);
 
           console.log("Staff info saved:", staff);
         }

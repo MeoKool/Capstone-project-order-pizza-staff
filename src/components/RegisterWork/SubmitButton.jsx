@@ -1,11 +1,14 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 
-const SubmitButton = ({ onPress }) => {
+const SubmitButton = ({ onPress, disabled }) => {
   return (
     <View className="px-6 mb-24">
       <TouchableOpacity
         onPress={onPress}
-        className="bg-white rounded-xl py-4 items-center justify-center"
+        disabled={disabled}
+        className={`${
+          disabled ? "bg-gray-300" : "bg-white"
+        } rounded-xl py-4 items-center justify-center`}
         style={{
           elevation: 8,
           shadowColor: "#000",
@@ -14,9 +17,13 @@ const SubmitButton = ({ onPress }) => {
           shadowRadius: 8,
         }}
       >
-        <Text className="text-orange-500 font-bold text-lg">
-          Xác nhận đăng ký
-        </Text>
+        {disabled ? (
+          <ActivityIndicator size="small" color="#FF6B6B" />
+        ) : (
+          <Text className="text-orange-500 font-bold text-lg">
+            Xác nhận đăng ký
+          </Text>
+        )}
       </TouchableOpacity>
     </View>
   );
