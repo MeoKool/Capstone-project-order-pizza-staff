@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -26,6 +24,7 @@ export default function WorkScheduleScreen({ navigation }) {
   const [weekDates, setWeekDates] = useState([]);
   const [scrollY] = useState(new Animated.Value(0));
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [registeredSlots, setRegisteredSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [staffId, setStaffId] = useState(null);
   const [configs, setConfigs] = useState({
@@ -40,6 +39,8 @@ export default function WorkScheduleScreen({ navigation }) {
         const id = await AsyncStorage.getItem("staffId");
         if (id) {
           setStaffId(id);
+          // Fetch registered slots once we have the staffId
+          fetchRegisteredSlots(id);
         } else {
           console.warn("Staff ID not found in AsyncStorage");
         }
@@ -55,6 +56,13 @@ export default function WorkScheduleScreen({ navigation }) {
   useEffect(() => {
     fetchConfigs();
   }, []);
+
+  // Fetch registered slots when date changes
+  useEffect(() => {
+    if (staffId) {
+      fetchRegisteredSlots(staffId);
+    }
+  }, [selectedDate, staffId]);
 
   // Fetch configuration data from API
   const fetchConfigs = async () => {
@@ -124,6 +132,26 @@ export default function WorkScheduleScreen({ navigation }) {
     setSelectedDate(dates[0]); // Select the first available date
   };
 
+  // Fetch registered slots from API
+  const fetchRegisteredSlots = async (staffId) => {
+    if (!staffId) return;
+
+    try {
+      const response = await fetch(
+        `https://vietsac.id.vn/api/working-slot-registers?year=0&month=0&day=0&dayOfWeek=0&StaffId=${staffId}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        setRegisteredSlots(data.result.items);
+      } else {
+        console.error("Failed to fetch registered slots:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching registered slots:", error);
+    }
+  };
+
   // Fetch available slots when date changes
   useEffect(() => {
     if (selectedDate) {
@@ -137,6 +165,25 @@ export default function WorkScheduleScreen({ navigation }) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  // Check if a slot is already registered
+  const isSlotRegistered = (date, slotId) => {
+    const formattedDate = formatDateForAPI(date);
+    return registeredSlots.some(
+      (slot) =>
+        slot.workingDate === formattedDate && slot.workingSlotId === slotId
+    );
+  };
+
+  // Get registration status for a slot
+  const getSlotRegistrationStatus = (date, slotId) => {
+    const formattedDate = formatDateForAPI(date);
+    const registeredSlot = registeredSlots.find(
+      (slot) =>
+        slot.workingDate === formattedDate && slot.workingSlotId === slotId
+    );
+    return registeredSlot ? registeredSlot.status : null;
   };
 
   // Fetch available slots from API
@@ -181,6 +228,16 @@ export default function WorkScheduleScreen({ navigation }) {
 
   // Toggle selection of a time slot for a specific date
   const toggleTimeSlot = (date, slotId) => {
+    // Check if the slot is already registered
+    if (isSlotRegistered(date, slotId)) {
+      const status = getSlotRegistrationStatus(date, slotId);
+      Alert.alert(
+        "Thông báo",
+        `Bạn đã đăng ký ca làm việc này (Trạng thái: ${status})`
+      );
+      return;
+    }
+
     const dateStr = date.toDateString();
 
     setSelectedSlots((prev) => {
@@ -267,6 +324,10 @@ export default function WorkScheduleScreen({ navigation }) {
 
       Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
       setSelectedSlots({});
+
+      // Refresh registered slots after successful registration
+      fetchRegisteredSlots(staffId);
+
       navigation.navigate("MainTabs");
     } catch (error) {
       console.error("Error registering slots:", error);
@@ -391,6 +452,9 @@ export default function WorkScheduleScreen({ navigation }) {
               selectedSlots={selectedSlots}
               toggleTimeSlot={toggleTimeSlot}
               availableSlots={availableSlots}
+              registeredSlots={registeredSlots}
+              isSlotRegistered={isSlotRegistered}
+              getSlotRegistrationStatus={getSlotRegistrationStatus}
               loading={loading}
             />
 

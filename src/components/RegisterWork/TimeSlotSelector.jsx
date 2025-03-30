@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Calendar, Clock, Check, Plus } from "lucide-react-native";
+import { Calendar, Clock, Check, Plus, AlertCircle } from "lucide-react-native";
 
 const DAYS_OF_WEEK = [
   "Chủ nhật",
@@ -16,6 +16,9 @@ const TimeSlotSelector = ({
   selectedSlots,
   toggleTimeSlot,
   availableSlots,
+  registeredSlots,
+  isSlotRegistered,
+  getSlotRegistrationStatus,
   loading,
 }) => {
   // Check if a time slot is selected for a specific date
@@ -28,6 +31,20 @@ const TimeSlotSelector = ({
   const formatTime = (time) => {
     if (!time) return "";
     return time.substring(0, 5); // Just take HH:MM part
+  };
+
+  // Get status color based on registration status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Approved":
+        return "text-green-600";
+      case "Onhold":
+        return "text-yellow-600";
+      case "Rejected":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
+    }
   };
 
   return (
@@ -67,6 +84,12 @@ const TimeSlotSelector = ({
         ) : (
           availableSlots.map((slot, index) => {
             const isSelected = isSlotSelected(selectedDate, slot.id);
+            const isRegistered = isSlotRegistered(selectedDate, slot.id);
+            const registrationStatus = getSlotRegistrationStatus(
+              selectedDate,
+              slot.id
+            );
+
             return (
               <TouchableOpacity
                 key={slot.id}
@@ -74,20 +97,38 @@ const TimeSlotSelector = ({
                   index !== availableSlots.length - 1
                     ? "border-b border-gray-100"
                     : ""
-                } ${isSelected ? "bg-orange-50" : ""}`}
+                } ${isSelected ? "bg-orange-50" : ""} ${
+                  isRegistered ? "bg-gray-100" : ""
+                }`}
                 onPress={() => toggleTimeSlot(selectedDate, slot.id)}
+                disabled={isRegistered}
               >
                 <View
                   className={`w-12 h-12 rounded-full items-center justify-center ${
-                    isSelected ? "bg-orange-100" : "bg-gray-100"
+                    isRegistered
+                      ? "bg-gray-200"
+                      : isSelected
+                      ? "bg-orange-100"
+                      : "bg-gray-100"
                   }`}
                 >
-                  <Clock size={24} color={isSelected ? "#FF6B6B" : "#9CA3AF"} />
+                  {isRegistered ? (
+                    <AlertCircle size={24} color="#6B7280" />
+                  ) : (
+                    <Clock
+                      size={24}
+                      color={isSelected ? "#FF6B6B" : "#9CA3AF"}
+                    />
+                  )}
                 </View>
                 <View className="ml-4 flex-1">
                   <Text
                     className={`font-semibold text-base ${
-                      isSelected ? "text-orange-500" : "text-gray-800"
+                      isRegistered
+                        ? "text-gray-600"
+                        : isSelected
+                        ? "text-orange-500"
+                        : "text-gray-800"
                     }`}
                   >
                     {formatTime(slot.shiftStart)} - {formatTime(slot.shiftEnd)}
@@ -95,16 +136,39 @@ const TimeSlotSelector = ({
                   <Text className="text-gray-500 text-sm">
                     {slot.shiftName}
                   </Text>
-                  <Text className="text-gray-400 text-xs">
-                    Cần {slot.capacity} nhân viên
-                  </Text>
+                  {isRegistered ? (
+                    <Text
+                      className={`text-xs ${getStatusColor(
+                        registrationStatus
+                      )}`}
+                    >
+                      Đã đăng ký •{" "}
+                      {registrationStatus === "Approved"
+                        ? "Chấp thuận"
+                        : registrationStatus === "Onhold"
+                        ? "Trong hàng chờ"
+                        : registrationStatus === "Rejected"
+                        ? "Từ chối"
+                        : registrationStatus}
+                    </Text>
+                  ) : (
+                    <Text className="text-gray-400 text-xs">
+                      {slot.capacity} người
+                    </Text>
+                  )}
                 </View>
                 <View
                   className={`w-8 h-8 rounded-full items-center justify-center ${
-                    isSelected ? "bg-orange-500" : "bg-gray-200"
+                    isRegistered
+                      ? "bg-gray-300"
+                      : isSelected
+                      ? "bg-orange-500"
+                      : "bg-gray-200"
                   }`}
                 >
-                  {isSelected ? (
+                  {isRegistered ? (
+                    <Check size={18} color="#6B7280" />
+                  ) : isSelected ? (
                     <Check size={18} color="white" />
                   ) : (
                     <Plus size={18} color="#9CA3AF" />
