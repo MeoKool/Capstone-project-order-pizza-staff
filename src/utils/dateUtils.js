@@ -47,3 +47,35 @@ export const formatDateKey = (date) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${month}-${day}`;
 };
+
+// Get the first and last day of the month
+export const getMonthRange = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  return {
+    firstDay: formatDateForAPI(firstDay),
+    lastDay: formatDateForAPI(lastDay),
+  };
+};
+
+// Format date for display in Vietnamese
+export const formatDateForDisplay = (dateString) => {
+  const date = new Date(dateString);
+  const days = [
+    "Chủ nhật",
+    "Thứ hai",
+    "Thứ ba",
+    "Thứ tư",
+    "Thứ năm",
+    "Thứ sáu",
+    "Thứ bảy",
+  ];
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  return `${days[date.getDay()]}, ${day}/${month}/${year}`;
+};

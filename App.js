@@ -15,6 +15,7 @@ import TablesScreen from "./src/screens/TablesScreen";
 import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
 import RegisteredShiftsScreen from "./src/screens/RegisteredShiftsScreen";
+import WorkScheduleMonthScreen from "./src/screens/WorkScheduleMonthScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -61,6 +62,11 @@ function App() {
           name="RegisteredShifts"
           component={RegisteredShiftsScreen}
         />
+        <Stack.Screen
+          name="WorkScheduleMonth"
+          component={WorkScheduleMonthScreen}
+        />
+
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
         <Stack.Screen name="SwapSchedule" component={SwapScreen} />
       </Stack.Navigator>

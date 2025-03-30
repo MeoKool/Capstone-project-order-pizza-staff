@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { Calendar, Clock, RefreshCcw, ChevronRight } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
