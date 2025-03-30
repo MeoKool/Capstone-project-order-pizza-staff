@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -28,10 +30,42 @@ export default function WorkScheduleScreen({ navigation }) {
   const [registeredSlots, setRegisteredSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [staffId, setStaffId] = useState(null);
+  const [staffStatus, setStaffStatus] = useState("");
   const [configs, setConfigs] = useState({
     registrationWeekLimit: 1,
     registrationCutoffDay: 1,
   });
+
+  // Check staff status on component mount
+  useEffect(() => {
+    const checkStaffStatus = async () => {
+      try {
+        const status = await AsyncStorage.getItem("staffStatus");
+        if (status) {
+          setStaffStatus(status.toLowerCase());
+
+          // If staff is fullTime, show alert and navigate back
+          if (status.toLowerCase() === "fulltime") {
+            Alert.alert(
+              "Thông báo",
+              "Nhân viên toàn thời gian không cần đăng ký giờ làm việc.",
+              [
+                {
+                  text: "Quay lại",
+                  onPress: () => navigation.goBack(),
+                },
+              ],
+              { cancelable: false }
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error checking staff status:", error);
+      }
+    };
+
+    checkStaffStatus();
+  }, [navigation]);
 
   // Get staff ID from AsyncStorage
   useEffect(() => {
@@ -332,6 +366,7 @@ export default function WorkScheduleScreen({ navigation }) {
         }
       }
 
+      Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
       setSelectedSlots({});
 
       fetchRegisteredSlots(staffId);
@@ -404,6 +439,25 @@ export default function WorkScheduleScreen({ navigation }) {
     extrapolate: "clamp",
   });
 
+  // Only render the component if staff is not fullTime
+  if (staffStatus === "fulltime") {
+    return (
+      <LinearGradient
+        colors={["#ff7e5f", "#feb47b"]}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView className="flex-1 justify-center items-center">
+          <Text className="text-white text-xl font-bold text-center px-6">
+            Nhân viên không cần đăng ký giờ làm việc.
+          </Text>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  // Original return statement for non-fullTime staff
   return (
     <>
       <StatusBar

@@ -572,8 +572,7 @@ export default function ProfileScreen() {
               </View>
               <View className="items-center mt-4 mb-8">
                 <Text className="text-white/70 text-sm font-medium">
-                  © Service Link System to enhance operations in Pizza
-                  restaurant.
+                  © Service Link System
                 </Text>
               </View>
             </View>
