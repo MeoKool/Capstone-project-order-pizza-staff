@@ -1,7 +1,22 @@
 import { View, Text, ScrollView } from "react-native";
-import { Calendar, Clock, User } from "lucide-react-native";
+import { Calendar, Clock, MapPin } from "lucide-react-native";
 
 export default function WeeklySchedule({ weekSchedule }) {
+  // Get zone type label
+  const getZoneTypeLabel = (zoneType) => {
+    switch (zoneType) {
+      case "DininingArea":
+        return "Khu vực ăn uống";
+      case "KitchenArea":
+        return "Nhà bếp";
+      case "WorkshopArea":
+        return "Khu vực workshop";
+
+      default:
+        return "Khu vực khác";
+    }
+  };
+
   return (
     <ScrollView className="flex-1 px-6">
       {weekSchedule.map(({ date, schedule }) => (
@@ -34,10 +49,14 @@ export default function WeeklySchedule({ weekSchedule }) {
                   <Text className="text-gray-600 ml-2">{shift.time}</Text>
                 </View>
 
-                <View className="flex-row items-center">
-                  <User size={16} color="#6B7280" />
+                <View className="flex-row items-center mb-1">
+                  <MapPin size={16} color="#6B7280" />
                   <Text className="text-gray-600 ml-2">{shift.role}</Text>
                 </View>
+
+                <Text className="text-xs text-gray-500 ml-6">
+                  {getZoneTypeLabel(shift.zoneType)}
+                </Text>
               </View>
             ))
           ) : (

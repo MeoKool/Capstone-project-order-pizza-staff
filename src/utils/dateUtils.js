@@ -1,23 +1,29 @@
-export const getWeekDates = (date) => {
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+// Get dates for the current week (Sunday to Saturday)
+export const getWeekDates = (currentDate) => {
+  const dates = [];
+  const firstDayOfWeek = new Date(currentDate);
+  const day = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-  const monday = new Date(date.setDate(diff));
-  const weekDates = [];
+  // Set to the first day of the week (Sunday)
+  firstDayOfWeek.setDate(currentDate.getDate() - day);
 
+  // Generate 7 days
   for (let i = 0; i < 7; i++) {
-    const nextDate = new Date(monday);
-    nextDate.setDate(monday.getDate() + i);
-    weekDates.push(nextDate);
+    const date = new Date(firstDayOfWeek);
+    date.setDate(firstDayOfWeek.getDate() + i);
+    dates.push(date);
   }
 
-  return weekDates;
+  return dates;
 };
 
-export const formatDateKey = (date) => {
-  return date.toISOString().split("T")[0];
+// Format date as DD/MM
+export const formatDate = (date) => {
+  const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  return days[date.getDay()];
 };
 
+// Check if a date is today
 export const isToday = (date) => {
   const today = new Date();
   return (
@@ -27,7 +33,17 @@ export const isToday = (date) => {
   );
 };
 
-export const formatDate = (date) => {
-  const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-  return days[date.getDay()];
+// Format date as YYYY-MM-DD for API
+export const formatDateForAPI = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Format date as MM-DD for keys
+export const formatDateKey = (date) => {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${month}-${day}`;
 };
