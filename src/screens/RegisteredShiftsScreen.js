@@ -241,6 +241,10 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
                     </Text>
                   )}
                 </View>
+                <Text className="text-gray-500 text-sm mt-1">
+                  Đăng ký:{" "}
+                  {new Date(shift.registerDate).toLocaleString("vi-VN")}
+                </Text>
               </View>
             );
           })}
