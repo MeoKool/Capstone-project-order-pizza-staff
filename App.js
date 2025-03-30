@@ -14,6 +14,7 @@ import SwapScreen from "./src/screens/SwapScreen";
 import TablesScreen from "./src/screens/TablesScreen";
 import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
+import RegisteredShiftsScreen from "./src/screens/RegisteredShiftsScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -56,6 +57,10 @@ function App() {
         <Stack.Screen name="TableDetails" component={TableDetailsScreen} />
         <Stack.Screen name="QRCodePayment" component={QRCodePaymentScreen} />
         <Stack.Screen name="WorkSchedule" component={WorkScheduleScreen} />
+        <Stack.Screen
+          name="RegisteredShifts"
+          component={RegisteredShiftsScreen}
+        />
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
         <Stack.Screen name="SwapSchedule" component={SwapScreen} />
       </Stack.Navigator>

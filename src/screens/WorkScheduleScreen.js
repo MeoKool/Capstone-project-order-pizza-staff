@@ -6,10 +6,11 @@ import {
   Alert,
   View,
   Text,
+  TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Info } from "lucide-react-native";
+import { Info, ClipboardList } from "lucide-react-native";
 import BottomBar from "../components/BottomBar";
 import Header from "../components/Header";
 import WeekCalendar from "../components/RegisterWork/WeekCalendar";
@@ -150,6 +151,15 @@ export default function WorkScheduleScreen({ navigation }) {
     } catch (error) {
       console.error("Error fetching registered slots:", error);
     }
+  };
+
+  // Navigate to registered shifts screen
+  const navigateToRegisteredShifts = () => {
+    navigation.navigate("RegisteredShifts", {
+      staffId,
+      registrationWeekLimit: configs.registrationWeekLimit,
+      registrationCutoffDay: configs.registrationCutoffDay,
+    });
   };
 
   // Fetch available slots when date changes
@@ -423,11 +433,22 @@ export default function WorkScheduleScreen({ navigation }) {
             {/* Registration Info */}
             <View className="px-6 mt-2 mb-2">
               <View className="bg-white/20 rounded-xl p-3">
-                <View className="flex-row items-center">
-                  <Info size={18} color="white" />
-                  <Text className="text-white ml-2 font-medium">
-                    Thông tin đăng ký
-                  </Text>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <Info size={18} color="white" />
+                    <Text className="text-white ml-2 font-medium">
+                      Thông tin đăng ký
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={navigateToRegisteredShifts}
+                    className="flex-row items-center bg-white/30 px-3 py-1 rounded-full"
+                  >
+                    <ClipboardList size={16} color="white" />
+                    <Text className="text-white ml-1 font-medium text-sm">
+                      Lịch đã đăng ký
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <Text className="text-white mt-1 opacity-90">
                   Bạn có thể đăng ký lịch làm việc trước{" "}
