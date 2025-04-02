@@ -12,17 +12,18 @@ import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 import QRCodePaymentScreen from "./src/screens/QRCodePaymentScreen";
 import WorkScheduleScreen from "./src/screens/WorkScheduleScreen";
 import ToDoWeekScreen from "./src/screens/ToDoWeek";
-import SwapScreen from "./src/screens/SwapScreen";
 import TablesScreen from "./src/screens/TablesScreen";
 import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
 import RegisteredShiftsScreen from "./src/screens/RegisteredShiftsScreen";
 import WorkScheduleMonthScreen from "./src/screens/WorkScheduleMonthScreen";
+
 import {
   enhancedToastConfig,
   EnhancedToast,
 } from "./src/components/enhanced-toast-config";
 import enhancedNotificationService from "./src/services/enhanced-notification-service";
+import ShiftSwapScreen from "./src/screens/SwapScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -92,7 +93,7 @@ function App() {
         />
 
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
-        <Stack.Screen name="SwapSchedule" component={SwapScreen} />
+        <Stack.Screen name="SwapSchedule" component={ShiftSwapScreen} />
       </Stack.Navigator>
       {/* Use both the original Toast and our enhanced ToastManager */}
       <Toast config={enhancedToastConfig} />
