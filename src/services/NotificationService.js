@@ -98,9 +98,9 @@ class NotificationService {
       text2: message,
       position: "top",
       visibilityTime: 4000,
-      autoHide: true,
-      topOffset: 30,
-      bottomOffset: 40,
+      autoHide: false,
+      topOffset: 60,
+      bottomOffset: 80,
     });
   }
 
@@ -118,19 +118,6 @@ class NotificationService {
     signalRService.stop();
     this.isInitialized = false;
     console.log("NotificationService: Shutdown complete");
-  }
-
-  // Method to manually test toast notifications with the exact format
-  testToast() {
-    console.log("NotificationService: Testing toast notification");
-    this.handleNotification({
-      id: 0,
-      type: 1,
-      title: "Gọi nhân viên",
-      message: "Có yêu cầu gọi nhân viên tại bàn 2 - khu vực A",
-      payload: "A",
-      createdAt: "2025-04-01T11:39:42.7108467+00:00",
-    });
   }
 }
 
