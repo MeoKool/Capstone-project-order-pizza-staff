@@ -1,7 +1,11 @@
+"use client";
+
 import "./global.css";
+import { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import BottomBar from "./src/components/BottomBar";
@@ -16,7 +20,8 @@ import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
 import RegisteredShiftsScreen from "./src/screens/RegisteredShiftsScreen";
 import WorkScheduleMonthScreen from "./src/screens/WorkScheduleMonthScreen";
-
+import { toastConfig } from "./src/components/ToastConfig";
+import notificationService from "./src/services/NotificationService";
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -49,6 +54,24 @@ function MainTabs() {
 }
 
 function App() {
+  useEffect(() => {
+    // Initialize SignalR notification service
+    const initializeNotifications = async () => {
+      try {
+        await notificationService.initialize();
+      } catch (error) {
+        console.error("Failed to initialize notifications:", error);
+      }
+    };
+
+    initializeNotifications();
+
+    return () => {
+      // Clean up when app is unmounted
+      notificationService.shutdown();
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -70,6 +93,7 @@ function App() {
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
         <Stack.Screen name="SwapSchedule" component={SwapScreen} />
       </Stack.Navigator>
+      <Toast config={toastConfig} />
     </NavigationContainer>
   );
 }

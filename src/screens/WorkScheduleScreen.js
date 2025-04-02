@@ -378,7 +378,6 @@ export default function WorkScheduleScreen({ navigation }) {
         "Đăng ký thành công! Bạn có thể tiếp tục đăng ký ca làm việc khác.";
       Alert.alert("Thành công", successMessage);
     } catch (error) {
-      console.error("Error registering slots:", error);
       Alert.alert("Lỗi", error.message || "Không thể đăng ký ca làm việc");
     } finally {
       setLoading(false);
