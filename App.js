@@ -1,5 +1,3 @@
-"use client";
-
 import "./global.css";
 import { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -20,8 +18,11 @@ import TableDetailsScreen from "./src/screens/OrderDetailScreen";
 import QRCheckInScreen from "./src/screens/ScanQRCheckIn";
 import RegisteredShiftsScreen from "./src/screens/RegisteredShiftsScreen";
 import WorkScheduleMonthScreen from "./src/screens/WorkScheduleMonthScreen";
-import { toastConfig } from "./src/components/ToastConfig";
-import notificationService from "./src/services/NotificationService";
+import {
+  enhancedToastConfig,
+  EnhancedToast,
+} from "./src/components/enhanced-toast-config";
+import enhancedNotificationService from "./src/services/enhanced-notification-service";
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -58,7 +59,7 @@ function App() {
     // Initialize SignalR notification service
     const initializeNotifications = async () => {
       try {
-        await notificationService.initialize();
+        await enhancedNotificationService.initialize();
       } catch (error) {
         console.error("Failed to initialize notifications:", error);
       }
@@ -68,7 +69,7 @@ function App() {
 
     return () => {
       // Clean up when app is unmounted
-      notificationService.shutdown();
+      enhancedNotificationService.shutdown();
     };
   }, []);
 
@@ -93,7 +94,9 @@ function App() {
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
         <Stack.Screen name="SwapSchedule" component={SwapScreen} />
       </Stack.Navigator>
-      <Toast config={toastConfig} />
+      {/* Use both the original Toast and our enhanced ToastManager */}
+      <Toast config={enhancedToastConfig} />
+      <EnhancedToast.ToastManager />
     </NavigationContainer>
   );
 }
