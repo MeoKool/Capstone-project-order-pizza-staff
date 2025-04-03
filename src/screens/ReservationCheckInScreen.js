@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import {
   View,
@@ -18,6 +20,7 @@ import {
   MapPin,
   CheckCircle,
   ArrowLeft,
+  Clock,
 } from "lucide-react-native";
 import { format } from "date-fns";
 
@@ -76,6 +79,7 @@ export default function ReservationCheckInScreen({ navigation }) {
         );
       }
     } catch (error) {
+      console.error("Error checking reservation:", error);
       Alert.alert("Lỗi", "Không thể kiểm tra đặt bàn. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
@@ -117,6 +121,7 @@ export default function ReservationCheckInScreen({ navigation }) {
 
       Alert.alert("Thành công", "Check-in thành công!");
     } catch (error) {
+      console.error("Error checking in:", error);
       Alert.alert(
         "Lỗi",
         error.message || "Không thể check-in. Vui lòng thử lại sau."
@@ -141,62 +146,184 @@ export default function ReservationCheckInScreen({ navigation }) {
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case "Created":
+        return "Đã đặt trước ";
+      case "Reserved":
+        return "Đã đặt";
+      case "Checkedin":
+        return "Đã check-in";
+      case "OpeningAttachment":
+        return "Đang mở";
+      default:
+        return status;
+    }
+  };
+
   const formatDateTime = (dateTimeStr) => {
     const date = new Date(dateTimeStr);
     return format(date, "dd/MM/yyyy HH:mm");
   };
 
-  const renderReservationItem = ({ item }) => (
-    <View className="bg-white rounded-xl p-4 mb-4 shadow-md">
-      <View className="flex-row justify-between items-center mb-2">
-        <Text className="text-lg font-bold">{item.customerName}</Text>
-        <View
-          className="px-3 py-1 rounded-full"
-          style={{ backgroundColor: `${getStatusColor(item.status)}20` }}
-        >
-          <Text
-            style={{ color: getStatusColor(item.status), fontWeight: "600" }}
-          >
-            {item.status}
-          </Text>
-        </View>
-      </View>
+  const formatDate = (dateTimeStr) => {
+    const date = new Date(dateTimeStr);
+    return format(date, "dd/MM/yyyy");
+  };
 
-      <View className="flex-row items-center mb-2">
-        <Calendar size={16} color="#6c757d" className="mr-2" />
-        <Text className="text-gray-600">
-          {formatDateTime(item.bookingTime)}
-        </Text>
-      </View>
+  const formatTime = (dateTimeStr) => {
+    const date = new Date(dateTimeStr);
+    return format(date, "HH:mm");
+  };
 
-      <View className="flex-row items-center mb-2">
-        <Users size={16} color="#6c757d" className="mr-2" />
-        <Text className="text-gray-600">{item.numberOfPeople} người</Text>
-      </View>
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
-      {item.table && (
-        <View className="flex-row items-center mb-3">
-          <MapPin size={16} color="#6c757d" className="mr-2" />
-          <Text className="text-gray-600">
-            Bàn {item.table.code} - Khu vực {item.table.zone?.name || "N/A"}
-          </Text>
-        </View>
-      )}
+  const renderReservationItem = ({ item }) => {
+    const bookingDate = new Date(item.bookingTime);
+    const isToday = new Date().toDateString() === bookingDate.toDateString();
 
-      {item.status !== "Checkedin" && (
-        <TouchableOpacity
-          className="bg-gradient-to-r from-[#ff7e5f] to-[#feb47b] py-3 rounded-lg items-center"
-          onPress={() => handleCheckIn(item.id)}
-          disabled={checkingIn}
-        >
-          <View className="flex-row items-center justify-center">
-            <CheckCircle size={18} color="white" className="mr-2" />
-            <Text className="text-white font-bold">Check-in</Text>
+    return (
+      <View
+        className="bg-white rounded-2xl mb-5 overflow-hidden shadow-lg"
+        style={{
+          shadowColor: getStatusColor(item.status),
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          elevation: 5,
+        }}
+      >
+        {/* Header with customer info and status */}
+        <View className="px-5 pt-5 pb-3 flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            <View
+              className="w-12 h-12 rounded-full items-center justify-center mr-3"
+              style={{ backgroundColor: `${getStatusColor(item.status)}15` }}
+            >
+              <Text
+                className="text-lg font-bold"
+                style={{ color: getStatusColor(item.status) }}
+              >
+                {getInitials(item.customerName)}
+              </Text>
+            </View>
+            <View>
+              <Text className="text-lg font-bold text-gray-800">
+                {item.customerName}
+              </Text>
+              <Text className="text-sm text-gray-500">{item.phoneNumber}</Text>
+            </View>
           </View>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+          <View
+            className="px-3 py-1.5 rounded-full"
+            style={{ backgroundColor: `${getStatusColor(item.status)}15` }}
+          >
+            <Text
+              style={{
+                color: getStatusColor(item.status),
+                fontWeight: "600",
+                fontSize: 12,
+              }}
+            >
+              {getStatusText(item.status)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View className="h-[1px] bg-gray-100 mx-5" />
+
+        {/* Booking details */}
+        <View className="p-5">
+          <View className="flex-row items-center mb-3 bg-gray-50 p-3 rounded-xl">
+            <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mr-3">
+              <Calendar size={18} color="#FF7E5F" />
+            </View>
+            <View>
+              <Text className="text-xs text-gray-500 mb-0.5">Ngày đặt bàn</Text>
+              <View className="flex-row items-center">
+                <Text className="text-base font-semibold text-gray-800 mr-2">
+                  {isToday ? "Hôm nay" : formatDate(item.bookingTime)}
+                </Text>
+                <View className="flex-row items-center bg-gray-100 px-2 py-1 rounded-md">
+                  <Clock size={12} color="#6c757d" className="mr-1" />
+                  <Text className="text-xs text-gray-600">
+                    {formatTime(item.bookingTime)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View className="flex-row mb-4">
+            <View className="flex-1 flex-row items-center bg-gray-50 p-3 rounded-xl mr-2">
+              <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-2">
+                <Users size={18} color="#4D96FF" />
+              </View>
+              <View>
+                <Text className="text-xs text-gray-500 mb-0.5">Số người</Text>
+                <Text className="text-base font-semibold text-gray-800">
+                  {item.numberOfPeople}
+                </Text>
+              </View>
+            </View>
+
+            {item.table && (
+              <View className="flex-1 flex-row items-center bg-gray-50 p-3 rounded-xl">
+                <View className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center mr-2">
+                  <MapPin size={18} color="#9370DB" />
+                </View>
+                <View>
+                  <Text className="text-xs text-gray-500 mb-0.5">Bàn</Text>
+                  <Text className="text-base font-semibold text-gray-800">
+                    {item.table.code}{" "}
+                    {item.table.zone?.name ? `- ${item.table.zone.name}` : ""}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {item.status !== "Checkedin" && (
+            <TouchableOpacity
+              className="rounded-xl overflow-hidden mt-1"
+              onPress={() => handleCheckIn(item.id)}
+              disabled={checkingIn}
+            >
+              <LinearGradient
+                colors={["#ff7e5f", "#feb47b"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="py-5 items-center"
+              >
+                <View className="flex-row items-center justify-center">
+                  <CheckCircle size={22} color="white" className="mr-3" />
+                  <Text className="text-white font-bold text-lg">Check-in</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {item.status === "Checkedin" && (
+            <View className="bg-green-50 p-3 rounded-xl flex-row items-center justify-center">
+              <CheckCircle size={16} color="#6BCB77" className="mr-2" />
+              <Text className="text-green-600 font-medium">
+                Đã check-in thành công
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <>
