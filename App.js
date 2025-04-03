@@ -24,6 +24,7 @@ import {
 } from "./src/components/enhanced-toast-config";
 import enhancedNotificationService from "./src/services/enhanced-notification-service";
 import ShiftSwapScreen from "./src/screens/SwapScreen";
+import ReservationCheckInScreen from "./src/screens/ReservationCheckInScreen";
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -94,6 +95,11 @@ function App() {
 
         <Stack.Screen name="ToDoWeek" component={ToDoWeekScreen} />
         <Stack.Screen name="SwapSchedule" component={ShiftSwapScreen} />
+        <Stack.Screen
+          name="ReservationCheckIn"
+          component={ReservationCheckInScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
       {/* Use both the original Toast and our enhanced ToastManager */}
       <Toast config={enhancedToastConfig} />
