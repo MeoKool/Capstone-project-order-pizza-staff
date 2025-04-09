@@ -20,9 +20,11 @@ import {
   RefreshCw,
 } from "lucide-react-native";
 import axios from "axios";
-import { calculateTotalAmount } from "../components/OrderDetail/TotalAndCheckout";
+import { calculateTotalAmount } from "../components/OrderDetail/total-utils";
+// Update the import to use the utility file
 
 const { width } = Dimensions.get("window");
+const API_URL = "https://vietsac.id.vn/pizza-service";
 
 export default function QRCodePaymentScreen() {
   const navigation = useNavigation();
@@ -32,33 +34,42 @@ export default function QRCodePaymentScreen() {
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("qr"); // 'qr' or 'cash'
   const [paymentStatus, setPaymentStatus] = useState("pending"); // 'pending', 'processing', 'completed'
+  const [order, setOrder] = useState(null);
 
-  const totalAmount = calculateTotalAmount(orderItems);
+  // Use backend total if available, otherwise calculate from items
+  const totalAmount = order?.totalPrice || calculateTotalAmount(orderItems);
 
   useEffect(() => {
-    const createPaymentQRCode = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.post(
-          `https://vietsac.id.vn/pizza-service/api/payments/create-payment-qrcode/${orderId}`
+        setLoading(true);
+
+        // Fetch order details to get the backend-calculated total
+        const orderResponse = await axios.get(
+          `${API_URL}/api/orders/${orderId}?includeProperties=OrderItems%2CAdditionalFees`
         );
-        setPaymentData(response.data.result);
+        setOrder(orderResponse.data.result);
+
+        // Create payment QR code
+        const qrResponse = await axios.post(
+          `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
+        );
+        setPaymentData(qrResponse.data.result);
       } catch (error) {
-        console.error("Error creating payment QR code:", error);
+        console.error("Error initializing payment:", error);
         Alert.alert("Lỗi", "Không thể tạo mã QR thanh toán. Vui lòng thử lại.");
       } finally {
         setLoading(false);
       }
     };
 
-    createPaymentQRCode();
+    fetchData();
   }, [orderId]);
 
   const handleCashPayment = async () => {
     try {
       setPaymentStatus("processing");
-      await axios.post(
-        `https://vietsac.id.vn/pizza-service/api/payments/pay-order-by-cash/${orderId}`
-      );
+      await axios.post(`${API_URL}/api/payments/pay-order-by-cash/${orderId}`);
       setPaymentStatus("completed");
       setTimeout(() => {
         navigation.goBack();
@@ -76,8 +87,13 @@ export default function QRCodePaymentScreen() {
   const refreshQRCode = async () => {
     setLoading(true);
     try {
+      // Refresh order details
+      const orderResponse = await axios.get(`${API_URL}/api/orders/${orderId}`);
+      setOrder(orderResponse.data.result);
+
+      // Refresh QR code
       const response = await axios.post(
-        `https://vietsac.id.vn/pizza-service/api/payments/create-payment-qrcode/${orderId}`
+        `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
       );
       setPaymentData(response.data.result);
     } catch (error) {
@@ -89,10 +105,6 @@ export default function QRCodePaymentScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (amount) => {
-    return amount ? amount.toLocaleString("vi-VN") : "0";
   };
 
   return (

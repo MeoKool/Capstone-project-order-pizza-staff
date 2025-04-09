@@ -3,7 +3,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { Trash2 } from "lucide-react-native";
 import axios from "axios";
 
-const API_URL = "https://vietsac.id.vn/pizza-service";
+const API_URL = "https://vietsac.id.vn/";
 const { width } = Dimensions.get("window");
 
 export default function OrderItem({ item, onRefresh }) {

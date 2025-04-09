@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { SafeAreaView, Alert } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -6,7 +8,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import LoadingScreen from "./LoadingScreen";
-import { PAYMENT_STATUS } from "../base/constant";
 import OrderItemList from "../components/OrderDetail/OrderItemList";
 import TotalAndCheckout from "../components/OrderDetail/TotalAndCheckout";
 import Header from "../components/Header";
@@ -40,7 +41,9 @@ export default function TableDetailsScreen() {
             IncludeProperties: "OrderItemDetails",
           },
         }),
-        axios.get(`${API_URL}/api/orders/${currentOrderId}`),
+        axios.get(
+          `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees`
+        ),
       ]);
 
       setOrderItems(itemsResponse.data.result.items);
@@ -56,20 +59,39 @@ export default function TableDetailsScreen() {
   const handleCheckout = async () => {
     try {
       setCheckingOut(true);
-      const response = await axios.put(
+
+      // Make the checkout API call
+      const checkoutResponse = await axios.put(
         `${API_URL}/api/orders/check-out-order/${currentOrderId}`
       );
-      if (response.data.success) {
+
+      if (checkoutResponse.data.success) {
+        // Immediately fetch the updated order with fees
+        const orderResponse = await axios.get(
+          `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees`
+        );
+
+        // Update the order state with the new data that includes fees
+        setOrder(orderResponse.data.result);
+
+        // Show success message
         Alert.alert("Thành công", "Checkout thành công");
-        setOrder({ ...order, status: PAYMENT_STATUS.CHECKOUT });
       } else {
-        throw new Error(response.data.message || "Thanh toán thất bại");
+        throw new Error(checkoutResponse.data.message || "Thanh toán thất bại");
       }
     } catch (err) {
-      Alert.alert(
-        "Lỗi",
-        err.message || "Không thể thanh toán. Vui lòng thử lại."
-      );
+      // Extract error message from the response if available
+      let errorMessage = "Không thể thanh toán. Vui lòng thử lại.";
+
+      if (err.response && err.response.data) {
+        // Handle the specific error structure from the backend
+        const errorData = err.response.data;
+        errorMessage = errorData.message || errorMessage;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert("Lỗi", errorMessage);
     } finally {
       setCheckingOut(false);
     }
