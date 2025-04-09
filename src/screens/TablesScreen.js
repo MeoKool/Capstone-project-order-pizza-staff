@@ -33,7 +33,7 @@ export default function TablesScreen() {
       setLoading(true);
       const [tablesResponse, zonesResponse] = await Promise.all([
         axios.get(`${API_URL}/tables`),
-        axios.get(`${API_URL}/zones`),
+        axios.get(`${API_URL}/zones?SortBy=name`),
       ]);
       const tablesData = tablesResponse.data.result.items;
       setTables(tablesData);
