@@ -50,7 +50,11 @@ export default function HomeScreen({ navigation }) {
             <WorkProgress />
 
             {/* Check-in Button */}
-            <View className="px-6 mt-6">
+            <View className="px-6">
+              <View className="mt-6 mb-6">
+                <TodaySchedule />
+              </View>
+
               <TouchableOpacity
                 className="bg-white rounded-xl p-4 flex-row items-center"
                 style={{
@@ -80,9 +84,7 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <View className="px-6 mt-8">
-              <TodaySchedule />
-            </View>
+            <View className="px-6 mt-8"></View>
           </Animated.ScrollView>
 
           <BottomBar
