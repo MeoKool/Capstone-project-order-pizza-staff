@@ -7,8 +7,8 @@ const StatusFilter = ({ selectedStatus, setSelectedStatus, statusOptions }) => {
         return { icon: "🟢", label: "Bàn mở" };
       case "Closing":
         return { icon: "🔴", label: "Bàn đóng" };
-      case "Locked":
-        return { icon: "🔒", label: "Bàn khóa" };
+      case "Reserved":
+        return { icon: "🔒", label: "Bàn đã đặt trước" };
       default:
         return { icon: "🔍", label: status };
     }

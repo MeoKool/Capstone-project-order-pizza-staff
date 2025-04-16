@@ -1,5 +1,3 @@
-"use client";
-
 import {
   View,
   Text,
@@ -8,11 +6,12 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  ScrollView,
 } from "react-native";
 import { PAYMENT_STATUS } from "../../base/constant";
-import { Ticket, X } from "lucide-react-native";
+import { Ticket, X, Plus } from "lucide-react-native";
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // Import the calculation function from the utility file
 import { calculateTotalAmount } from "./total-utils";
 
@@ -32,13 +31,15 @@ const deleteVoucher = async (orderVoucherId, onSuccess) => {
       Alert.alert("Thành công", "Đã xóa mã giảm giá thành công");
       if (onSuccess) onSuccess();
     } else {
-      throw new Error(response.data.message || "Không thể xóa mã giảm giá");
+      throw new Error(
+        response.data.error.message || "Không thể xóa mã giảm giá"
+      );
     }
   } catch (err) {
     let errorMessage = "Không thể xóa mã giảm giá. Vui lòng thử lại.";
 
     if (err.response && err.response.data) {
-      errorMessage = err.response.data.message || errorMessage;
+      errorMessage = err.response.data.error.message || errorMessage;
     } else if (err.message) {
       errorMessage = err.message;
     }
@@ -53,13 +54,14 @@ export default function TotalAndCheckout({
   checkingOut,
   onCheckout,
   onPayment,
-  appliedVoucher,
-  onVoucherApplied,
+  appliedVoucher, // This will be ignored as we'll use appliedVouchers array
+  onVoucherApplied, // This will be modified to handle multiple vouchers
 }) {
   const [voucherCode, setVoucherCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [voucherModalVisible, setVoucherModalVisible] = useState(false);
+  const [appliedVouchers, setAppliedVouchers] = useState([]);
 
   // Use the backend-calculated total if available, otherwise fallback to empty order
   const totalAmount = order?.totalPrice || 0;
@@ -67,6 +69,19 @@ export default function TotalAndCheckout({
   // Check if order is in checkout state
   const isUnpaidState = order && order.status === PAYMENT_STATUS.UNPAID;
   const isCheckoutState = order && order.status === PAYMENT_STATUS.CHECKOUT;
+
+  // Initialize appliedVouchers from order data
+  useEffect(() => {
+    if (order?.orderVouchers && order.orderVouchers.length > 0) {
+      const vouchers = order.orderVouchers.map((ov) => ({
+        ...ov.voucher,
+        orderVoucherId: ov.id,
+      }));
+      setAppliedVouchers(vouchers);
+    } else {
+      setAppliedVouchers([]);
+    }
+  }, [order]);
 
   const applyVoucher = async () => {
     if (!voucherCode.trim()) {
@@ -97,6 +112,11 @@ export default function TotalAndCheckout({
         throw new Error("Mã voucher đã được sử dụng hoặc không khả dụng");
       }
 
+      // Check if this voucher is already applied
+      if (appliedVouchers.some((v) => v.id === voucher.id)) {
+        throw new Error("Mã voucher này đã được áp dụng");
+      }
+
       // Step 2: Apply the voucher to the order
       const applyResponse = await axios.post(`${API_URL}/api/order-vouchers`, {
         orderId: order.id,
@@ -109,11 +129,25 @@ export default function TotalAndCheckout({
         );
       }
 
+      // Get the orderVoucherId from the response
+      const orderVoucherId = applyResponse.data.result.id;
+
+      // Add the new voucher to the list with its orderVoucherId
+      const newVoucher = {
+        ...voucher,
+        orderVoucherId: orderVoucherId,
+      };
+
       // Clear the input and notify parent component
       setVoucherCode("");
       setVoucherModalVisible(false);
+
+      // Update the local state
+      setAppliedVouchers((prev) => [...prev, newVoucher]);
+
+      // Notify parent to refresh order data
       if (onVoucherApplied) {
-        onVoucherApplied(voucher);
+        onVoucherApplied(newVoucher);
       }
 
       Alert.alert(
@@ -136,6 +170,20 @@ export default function TotalAndCheckout({
       Alert.alert("Lỗi", errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteVoucher = (voucher) => {
+    if (voucher.orderVoucherId) {
+      deleteVoucher(voucher.orderVoucherId, () => {
+        // Remove the voucher from the local state
+        setAppliedVouchers((prev) => prev.filter((v) => v.id !== voucher.id));
+
+        // Notify parent to refresh order data
+        if (onVoucherApplied) {
+          onVoucherApplied(null);
+        }
+      });
     }
   };
 
@@ -248,46 +296,45 @@ export default function TotalAndCheckout({
               <Text className="text-black font-medium ml-2">Mã giảm giá</Text>
             </View>
 
-            {!appliedVoucher && (
-              <TouchableOpacity
-                className="bg-[#ff7e5f] rounded-lg px-4 py-2"
-                onPress={() => setVoucherModalVisible(true)}
-              >
-                <Text className="text-white font-bold">Thêm mã</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              className="bg-[#ff7e5f] rounded-lg px-4 py-2 flex-row items-center"
+              onPress={() => setVoucherModalVisible(true)}
+            >
+              <Plus size={16} color="white" className="mr-1" />
+              <Text className="text-white font-bold">Thêm mã</Text>
+            </TouchableOpacity>
           </View>
 
-          {appliedVoucher && (
-            <View className="bg-green-100 p-2 rounded-lg flex-row justify-between items-center mt-2">
-              <Text className="text-green-800 font-medium flex-1">
-                Đã áp dụng: {appliedVoucher.code} (
-                {appliedVoucher.discountType === "Percentage"
-                  ? `Giảm ${appliedVoucher.discountValue}%`
-                  : `Giảm ${appliedVoucher.discountValue.toLocaleString(
-                      "vi-VN"
-                    )} VNĐ`}
-                )
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  // Find the orderVoucherId from the order data
-                  const orderVoucher = order?.orderVouchers?.find(
-                    (ov) => ov.voucherId === appliedVoucher.id
-                  );
-                  if (orderVoucher) {
-                    deleteVoucher(orderVoucher.id, () => {
-                      if (onVoucherApplied) {
-                        onVoucherApplied(null);
-                      }
-                    });
-                  }
-                }}
-                className="ml-2 bg-red-500 p-1 rounded-full"
-              >
-                <X size={16} color="white" />
-              </TouchableOpacity>
-            </View>
+          {appliedVouchers.length > 0 && (
+            <ScrollView
+              className="mt-2"
+              style={{
+                maxHeight: appliedVouchers.length > 2 ? 120 : undefined,
+              }}
+            >
+              {appliedVouchers.map((voucher) => (
+                <View
+                  key={voucher.id}
+                  className="bg-green-100 p-2 rounded-lg flex-row justify-between items-center mb-2"
+                >
+                  <Text className="text-green-800 font-medium flex-1">
+                    {voucher.code} (
+                    {voucher.discountType === "Percentage"
+                      ? `Giảm ${voucher.discountValue}%`
+                      : `Giảm ${voucher.discountValue.toLocaleString(
+                          "vi-VN"
+                        )} VNĐ`}
+                    )
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteVoucher(voucher)}
+                    className="ml-2 bg-red-500 p-1 rounded-full"
+                  >
+                    <X size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
           )}
         </View>
       )}
@@ -295,7 +342,7 @@ export default function TotalAndCheckout({
       {/* Show subtotal if we have additional fees and not in checkout state */}
       {!isUnpaidState &&
         order?.totalOrderItemPrice &&
-        (order?.additionalFees?.length > 0 || appliedVoucher) && (
+        (order?.additionalFees?.length > 0 || appliedVouchers.length > 0) && (
           <View className="flex-row justify-between items-center mb-1">
             <Text className="text-black font-medium">Tổng tiền món:</Text>
             <Text className="text-black font-medium">

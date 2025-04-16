@@ -21,7 +21,6 @@ export default function TableDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -33,7 +32,6 @@ export default function TableDetailsScreen() {
     return unsubscribe;
   }, [navigation]);
 
-  // Update the fetchOrderItems function to properly set the applied voucher from the order data
   const fetchOrderItems = async () => {
     try {
       setLoading(true);
@@ -52,21 +50,6 @@ export default function TableDetailsScreen() {
       setOrderItems(itemsResponse.data.result.items);
       setOrder(orderResponse.data.result);
       setError(null);
-
-      // Check if there's an applied voucher directly from the order data
-      if (
-        orderResponse.data.result.orderVouchers &&
-        orderResponse.data.result.orderVouchers.length > 0
-      ) {
-        const voucher = orderResponse.data.result.orderVouchers[0].voucher;
-        if (voucher) {
-          setAppliedVoucher(voucher);
-        } else {
-          setAppliedVoucher(null);
-        }
-      } else {
-        setAppliedVoucher(null);
-      }
     } catch (err) {
       setError("Bàn chưa có đơn hàng nào!");
     } finally {
@@ -122,9 +105,9 @@ export default function TableDetailsScreen() {
     });
   };
 
-  const handleVoucherApplied = (voucher) => {
-    setAppliedVoucher(voucher);
-    fetchOrderItems(); // Refresh order data to get updated prices
+  const handleVoucherApplied = () => {
+    // Just refresh the order data to get updated prices and voucher information
+    fetchOrderItems();
   };
 
   if (loading) {
@@ -159,7 +142,6 @@ export default function TableDetailsScreen() {
             checkingOut={checkingOut}
             onCheckout={handleCheckout}
             onPayment={handlePayment}
-            appliedVoucher={appliedVoucher}
             onVoucherApplied={handleVoucherApplied}
           />
         </SafeAreaView>

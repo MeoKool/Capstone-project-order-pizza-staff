@@ -91,7 +91,7 @@ export default function TablesScreen() {
     }
   };
 
-  const statusOptions = ["Opening", "Closing", "Locked"];
+  const statusOptions = ["Opening", "Closing", "Reserved"];
 
   if (loading) {
     return (

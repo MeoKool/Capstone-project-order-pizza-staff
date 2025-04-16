@@ -10,8 +10,8 @@ const TableItem = ({ item, onPress, getStatusColor }) => {
         return "Bàn mở";
       case "Closing":
         return "Bàn đóng";
-      case "Locked":
-        return "Bàn khóa";
+      case "Reserved":
+        return "Bàn đã đặt trước";
       default:
         return status;
     }
