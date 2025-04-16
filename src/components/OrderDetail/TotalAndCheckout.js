@@ -172,20 +172,6 @@ export default function TotalAndCheckout({
         </View>
       )}
 
-      {/* Display voucher discount if applied and not in checkout state */}
-      {!isCheckoutState && appliedVoucher && (
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-black font-medium">
-            Giảm giá ({appliedVoucher.code}):
-          </Text>
-          <Text className="text-black font-medium text-red-600">
-            {appliedVoucher.discountType === "Percentage"
-              ? `-${appliedVoucher.discountValue}%`
-              : `-${appliedVoucher.discountValue.toLocaleString("vi-VN")} VNĐ`}
-          </Text>
-        </View>
-      )}
-
       {/* Show subtotal if we have additional fees and not in checkout state */}
       {!isCheckoutState &&
         order?.totalOrderItemPrice &&
