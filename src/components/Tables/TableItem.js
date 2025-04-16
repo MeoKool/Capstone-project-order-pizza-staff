@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { Users } from "lucide-react-native";
 
-const TableItem = ({ item, onPress, getStatusColor }) => {
+const TableItem = ({ item, onPress, getStatusColor, refreshTables }) => {
   const statusColor = getStatusColor(item.status);
 
   const getStatusLabel = (status) => {

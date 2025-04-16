@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SafeAreaView, Alert } from "react-native";
+import { SafeAreaView, Alert, View } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,7 +11,6 @@ import LoadingScreen from "./LoadingScreen";
 import OrderItemList from "../components/OrderDetail/OrderItemList";
 import TotalAndCheckout from "../components/OrderDetail/TotalAndCheckout";
 import Header from "../components/Header";
-import { View } from "lucide-react-native";
 
 const API_URL = "https://vietsac.id.vn/pizza-service";
 
@@ -21,37 +20,70 @@ export default function TableDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [tableId, setTableId] = useState(null);
 
   const navigation = useNavigation();
   const route = useRoute();
-  const { currentOrderId, code } = route.params;
+  const { currentOrderId, code, tableId: routeTableId } = route.params;
 
   useEffect(() => {
+    // Set tableId from route params if available
+    if (routeTableId) {
+      console.log("Table ID from route:", routeTableId);
+      setTableId(routeTableId);
+    } else {
+      // If tableId is not provided in route params, try to fetch it
+      fetchTableId();
+    }
+
     fetchOrderItems();
     const unsubscribe = navigation.addListener("focus", fetchOrderItems);
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, routeTableId]);
+
+  const fetchTableId = async () => {
+    try {
+      // Try to get table ID by code if not provided directly
+      const response = await axios.get(`${API_URL}/api/tables`, {
+        params: { Code: code },
+      });
+
+      if (response.data.success && response.data.result.items.length > 0) {
+        const id = response.data.result.items[0].id;
+        console.log("Fetched table ID:", id);
+        setTableId(id);
+      }
+    } catch (err) {
+      console.error("Error fetching table ID:", err);
+    }
+  };
 
   const fetchOrderItems = async () => {
     try {
       setLoading(true);
-      const [itemsResponse, orderResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/order-items`, {
-          params: {
-            OrderId: currentOrderId,
-            IncludeProperties: "OrderItemDetails",
-          },
-        }),
-        axios.get(
-          `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees%2COrderVouchers.Voucher`
-        ),
-      ]);
+      if (currentOrderId) {
+        const [itemsResponse, orderResponse] = await Promise.all([
+          axios.get(`${API_URL}/api/order-items`, {
+            params: {
+              OrderId: currentOrderId,
+              IncludeProperties: "OrderItemDetails",
+            },
+          }),
+          axios.get(
+            `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees%2COrderVouchers.Voucher`
+          ),
+        ]);
 
-      setOrderItems(itemsResponse.data.result.items);
-      setOrder(orderResponse.data.result);
-      setError(null);
+        setOrderItems(itemsResponse.data.result.items);
+        setOrder(orderResponse.data.result);
+        setError(null);
+      } else {
+        setOrderItems([]);
+        setOrder(null);
+      }
     } catch (err) {
-      setError("Bàn chưa có đơn hàng nào!");
+      setOrderItems([]);
+      setOrder(null);
     } finally {
       setLoading(false);
     }
@@ -134,16 +166,20 @@ export default function TableDetailsScreen() {
             orderItems={orderItems}
             error={error}
             onRetry={fetchOrderItems}
+            tableId={tableId}
+            navigation={navigation}
           />
           <View className="mb-6"></View>
-          <TotalAndCheckout
-            order={order}
-            orderItems={orderItems}
-            checkingOut={checkingOut}
-            onCheckout={handleCheckout}
-            onPayment={handlePayment}
-            onVoucherApplied={handleVoucherApplied}
-          />
+          {currentOrderId && (
+            <TotalAndCheckout
+              order={order}
+              orderItems={orderItems}
+              checkingOut={checkingOut}
+              onCheckout={handleCheckout}
+              onPayment={handlePayment}
+              onVoucherApplied={handleVoucherApplied}
+            />
+          )}
         </SafeAreaView>
       </LinearGradient>
     </GestureHandlerRootView>

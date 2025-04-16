@@ -5,6 +5,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
@@ -73,11 +74,33 @@ export default function TablesScreen() {
     setFilteredTables(filtered);
   }, [tables, searchQuery, selectedStatus]);
 
+  const openTable = async (tableId) => {
+    try {
+      setLoading(true);
+      await axios.put(`https://vietsac.id.vn/api/tables/open-table/${tableId}`);
+      // Refresh tables after opening
+      await fetchTablesAndZones();
+      Alert.alert("Thành công", "Đã mở bàn thành công");
+    } catch (err) {
+      console.error("Error opening table:", err);
+      Alert.alert("Lỗi", "Không thể mở bàn. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTablePress = (table) => {
-    navigation.navigate("TableDetails", {
-      currentOrderId: table.currentOrderId,
-      code: table.code,
-    });
+    if (table.status === "Closing") {
+      // If table status is Closing, call API to open the table
+      openTable(table.id);
+    } else {
+      // Otherwise navigate to table details
+      navigation.navigate("TableDetails", {
+        currentOrderId: table.currentOrderId,
+        code: table.code,
+        tableId: table.id,
+      });
+    }
   };
 
   const getStatusColor = (status) => {
@@ -149,6 +172,7 @@ export default function TablesScreen() {
               tables={filteredTables}
               onTablePress={handleTablePress}
               getStatusColor={getStatusColor}
+              refreshTables={fetchTablesAndZones}
             />
           ))}
 
