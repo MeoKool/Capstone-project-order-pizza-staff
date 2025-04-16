@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { ChevronDown, ChevronUp } from "lucide-react-native";

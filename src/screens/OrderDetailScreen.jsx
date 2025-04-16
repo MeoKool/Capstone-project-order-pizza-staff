@@ -11,6 +11,7 @@ import LoadingScreen from "./LoadingScreen";
 import OrderItemList from "../components/OrderDetail/OrderItemList";
 import TotalAndCheckout from "../components/OrderDetail/TotalAndCheckout";
 import Header from "../components/Header";
+import { View } from "lucide-react-native";
 
 const API_URL = "https://vietsac.id.vn/pizza-service";
 
@@ -20,6 +21,7 @@ export default function TableDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -42,13 +44,43 @@ export default function TableDetailsScreen() {
           },
         }),
         axios.get(
-          `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees`
+          `${API_URL}/api/orders/${currentOrderId}?includeProperties=OrderItems%2CAdditionalFees%2COrderVouchers.Voucher`
         ),
       ]);
 
       setOrderItems(itemsResponse.data.result.items);
       setOrder(orderResponse.data.result);
       setError(null);
+
+      // Check if there's an applied voucher
+      try {
+        const voucherResponse = await axios.get(
+          `${API_URL}/api/order-vouchers`,
+          {
+            params: { OrderId: currentOrderId },
+          }
+        );
+
+        if (
+          voucherResponse.data.success &&
+          voucherResponse.data.result.items.length > 0
+        ) {
+          // Get the voucher details
+          const voucherId = voucherResponse.data.result.items[0].voucherId;
+          const voucherDetailResponse = await axios.get(
+            `${API_URL}/api/vouchers/${voucherId}`
+          );
+
+          if (voucherDetailResponse.data.success) {
+            setAppliedVoucher(voucherDetailResponse.data.result);
+          }
+        } else {
+          setAppliedVoucher(null);
+        }
+      } catch (voucherErr) {
+        console.log("Error fetching voucher:", voucherErr);
+        setAppliedVoucher(null);
+      }
     } catch (err) {
       setError("Bàn chưa có đơn hàng nào!");
     } finally {
@@ -104,6 +136,11 @@ export default function TableDetailsScreen() {
     });
   };
 
+  const handleVoucherApplied = (voucher) => {
+    setAppliedVoucher(voucher);
+    fetchOrderItems(); // Refresh order data to get updated prices
+  };
+
   if (loading) {
     return (
       <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
@@ -129,12 +166,15 @@ export default function TableDetailsScreen() {
             error={error}
             onRetry={fetchOrderItems}
           />
+          <View className="mb-9"></View>
           <TotalAndCheckout
             order={order}
             orderItems={orderItems}
             checkingOut={checkingOut}
             onCheckout={handleCheckout}
             onPayment={handlePayment}
+            appliedVoucher={appliedVoucher}
+            onVoucherApplied={handleVoucherApplied}
           />
         </SafeAreaView>
       </LinearGradient>
