@@ -166,7 +166,7 @@ export default function TableDetailsScreen() {
             error={error}
             onRetry={fetchOrderItems}
           />
-          <View className="mb-9"></View>
+          <View className="mb-6"></View>
           <TotalAndCheckout
             order={order}
             orderItems={orderItems}

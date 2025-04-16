@@ -65,53 +65,34 @@ export default function QRCodePaymentScreen() {
         } catch (qrError) {
           console.error("QR code generation error:", qrError);
 
-          // Extract detailed error message from response
-          let errorMessage = "Không thể tạo mã QR thanh toán.";
-
+          // Just pass the error directly from backend
           if (qrError.response && qrError.response.data) {
-            const errorData = qrError.response.data;
-            if (errorData.error && errorData.message) {
-              errorMessage = errorData.message;
-
-              // Check for specific error codes
-              if (errorData.code === 1003) {
-                // This is the voucher invalid error
-                setError({
-                  title: "Lỗi voucher",
-                  message: errorMessage,
-                  type: "voucher",
-                });
-              } else {
-                setError({
-                  title: "Lỗi thanh toán",
-                  message: errorMessage,
-                  type: "payment",
-                });
-              }
-            }
+            setError(qrError.response.data.error.message);
+            Alert.alert(
+              "Lỗi",
+              qrError.response.data.error.message ||
+                "Không thể tạo mã QR thanh toán"
+            );
+          } else {
+            Alert.alert(
+              "Lỗi",
+              qrError.message || "Không thể tạo mã QR thanh toán"
+            );
           }
-
-          Alert.alert("Lỗi", errorMessage);
         }
       } catch (error) {
         console.error("Error initializing payment:", error);
 
-        let errorMessage = "Không thể khởi tạo thanh toán. Vui lòng thử lại.";
-
+        // Just pass the error directly from backend
         if (error.response && error.response.data) {
-          const errorData = error.response.data;
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          }
+          setError(error.response.data);
+          Alert.alert(
+            "Lỗi",
+            error.response.data.error.message || "Không thể khởi tạo thanh toán"
+          );
+        } else {
+          Alert.alert("Lỗi", error.message || "Không thể khởi tạo thanh toán");
         }
-
-        setError({
-          title: "Lỗi kết nối",
-          message: errorMessage,
-          type: "connection",
-        });
-
-        Alert.alert("Lỗi", errorMessage);
       } finally {
         setLoading(false);
       }
@@ -125,52 +106,28 @@ export default function QRCodePaymentScreen() {
       setPaymentStatus("processing");
       setError(null);
 
-      try {
-        await axios.post(
-          `${API_URL}/api/payments/pay-order-by-cash/${orderId}`
-        );
-        setPaymentStatus("completed");
-        setTimeout(() => {
-          navigation.goBack();
-        }, 1500);
-      } catch (payError) {
-        console.error("Cash payment error:", payError);
-
-        let errorMessage = "Không thể xử lý thanh toán tiền mặt.";
-
-        if (payError.response && payError.response.data) {
-          const errorData = payError.response.data;
-          if (errorData.message) {
-            errorMessage = errorData.message;
-
-            // Check for specific error codes
-            if (errorData.code === 1003) {
-              // This is the voucher invalid error
-              setError({
-                title: "Lỗi voucher",
-                message: errorMessage,
-                type: "voucher",
-              });
-            } else {
-              setError({
-                title: "Lỗi thanh toán",
-                message: errorMessage,
-                type: "payment",
-              });
-            }
-          }
-        }
-
-        Alert.alert("Lỗi", errorMessage);
-        setPaymentStatus("pending");
-      }
+      await axios.post(`${API_URL}/api/payments/pay-order-by-cash/${orderId}`);
+      setPaymentStatus("completed");
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1500);
     } catch (error) {
-      console.error("Error in cash payment flow:", error);
+      console.error("Cash payment error:", error);
       setPaymentStatus("pending");
-      Alert.alert(
-        "Lỗi",
-        "Không thể xử lý thanh toán tiền mặt. Vui lòng thử lại."
-      );
+
+      // Just pass the error directly from backend
+      if (error.response && error.response.data) {
+        setError(error.response.data);
+        Alert.alert(
+          "Lỗi",
+          error.response.data.message || "Không thể xử lý thanh toán tiền mặt"
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          error.message || "Không thể xử lý thanh toán tiền mặt"
+        );
+      }
     }
   };
 
@@ -184,60 +141,27 @@ export default function QRCodePaymentScreen() {
       setOrder(orderResponse.data.result);
 
       // Refresh QR code
-      try {
-        const response = await axios.post(
-          `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
-        );
-        setPaymentData(response.data.result);
-      } catch (qrError) {
-        console.error("QR refresh error:", qrError);
-
-        let errorMessage = "Không thể làm mới mã QR thanh toán.";
-
-        if (qrError.response && qrError.response.data) {
-          const errorData = qrError.response.data;
-          if (errorData.message) {
-            errorMessage = errorData.message;
-
-            // Check for specific error codes
-            if (errorData.code === 1003) {
-              // This is the voucher invalid error
-              setError({
-                title: "Lỗi voucher",
-                message: errorMessage,
-                type: "voucher",
-              });
-            } else {
-              setError({
-                title: "Lỗi thanh toán",
-                message: errorMessage,
-                type: "payment",
-              });
-            }
-          }
-        }
-
-        Alert.alert("Lỗi", errorMessage);
-      }
+      const response = await axios.post(
+        `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
+      );
+      setPaymentData(response.data.result);
     } catch (error) {
       console.error("Error refreshing payment QR code:", error);
 
-      let errorMessage = "Không thể làm mới mã QR thanh toán.";
-
+      // Just pass the error directly from backend
       if (error.response && error.response.data) {
-        const errorData = error.response.data;
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
+        setError(error.response.data);
+        Alert.alert(
+          "Lỗi",
+          error.response.data.error.message ||
+            "Không thể làm mới mã QR thanh toán"
+        );
+      } else {
+        Alert.alert(
+          "Lỗi",
+          error.message || "Không thể làm mới mã QR thanh toán"
+        );
       }
-
-      setError({
-        title: "Lỗi kết nối",
-        message: errorMessage,
-        type: "connection",
-      });
-
-      Alert.alert("Lỗi", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -256,54 +180,31 @@ export default function QRCodePaymentScreen() {
             setCancellingPayment(true);
             setError(null);
 
-            // Call the cancel payment API
-            try {
-              const response = await axios.post(
-                `${API_URL}/api/payments/cancel-payment-qrcode/${orderId}`
+            const response = await axios.post(
+              `${API_URL}/api/payments/cancel-payment-qrcode/${orderId}`
+            );
+
+            if (response.data.success) {
+              Alert.alert("Thành công", "Đã hủy thanh toán thành công");
+              navigation.goBack();
+            } else {
+              throw new Error(
+                response.data.message || "Không thể hủy thanh toán"
               );
-
-              if (response.data.success) {
-                Alert.alert("Thành công", "Đã hủy thanh toán thành công");
-                navigation.goBack();
-              } else {
-                throw new Error(
-                  response.data.message || "Không thể hủy thanh toán"
-                );
-              }
-            } catch (cancelError) {
-              console.error("Cancel payment error:", cancelError);
-
-              let errorMessage = "Không thể hủy thanh toán.";
-
-              if (cancelError.response && cancelError.response.data) {
-                const errorData = cancelError.response.data;
-                if (errorData.message) {
-                  errorMessage = errorData.message;
-                }
-              } else if (cancelError.message) {
-                errorMessage = cancelError.message;
-              }
-
-              setError({
-                title: "Lỗi hủy thanh toán",
-                message: errorMessage,
-                type: "cancel",
-              });
-
-              Alert.alert("Lỗi", errorMessage);
             }
           } catch (error) {
-            console.error("Error in cancel payment flow:", error);
+            console.error("Cancel payment error:", error);
 
-            let errorMessage = "Không thể hủy thanh toán. Vui lòng thử lại.";
-
+            // Just pass the error directly from backend
             if (error.response && error.response.data) {
-              errorMessage = error.response.data.message || errorMessage;
-            } else if (error.message) {
-              errorMessage = error.message;
+              setError(error.response.data);
+              Alert.alert(
+                "Lỗi",
+                error.response.data.message || "Không thể hủy thanh toán"
+              );
+            } else {
+              Alert.alert("Lỗi", error.message || "Không thể hủy thanh toán");
             }
-
-            Alert.alert("Lỗi", errorMessage);
           } finally {
             setCancellingPayment(false);
           }
@@ -314,44 +215,25 @@ export default function QRCodePaymentScreen() {
 
   // Function to handle returning to order screen to fix voucher issues
   const handleFixVoucher = () => {
-    Alert.alert(
-      "Lỗi voucher",
-      "Bạn cần quay lại màn hình đơn hàng để kiểm tra lại voucher đã áp dụng.",
-      [
-        {
-          text: "Quay lại đơn hàng",
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+    navigation.goBack();
   };
 
   return (
     <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
+        <View className="flex-row items-center mb-4 px-4 pt-2">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="mr-4 p-2.5 bg-white/20 rounded-xl"
+            activeOpacity={0.7}
+          >
+            <ChevronLeft size={24} color="white" />
+          </TouchableOpacity>
+          <Text className="text-white text-2xl font-bold">Thanh Toán</Text>
+        </View>
+
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View className="flex-1 justify-center items-center px-4">
-            {/* Error Display */}
-            {error && (
-              <View className="bg-red-100 border border-red-400 rounded-lg p-4 mb-6 w-full">
-                <Text className="text-red-800 font-bold text-lg mb-1">
-                  {error.title}
-                </Text>
-                <Text className="text-red-700">{error.message}</Text>
-
-                {error.type === "voucher" && (
-                  <TouchableOpacity
-                    onPress={handleFixVoucher}
-                    className="bg-red-500 py-2 px-4 rounded-lg mt-3 self-start"
-                  >
-                    <Text className="text-white font-medium">
-                      Kiểm tra voucher
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
             {/* Payment Method Selector */}
             <View className="flex-row bg-white/20 rounded-xl p-1 mb-6 w-full max-w-xs">
               <TouchableOpacity
@@ -417,11 +299,11 @@ export default function QRCodePaymentScreen() {
                       color="#f26b0f"
                       style={{ height: 250, width: 250 }}
                     />
-                  ) : error && error.type === "voucher" ? (
+                  ) : error ? (
                     <View className="h-250 w-250 items-center justify-center">
                       <X size={64} color="#f26b0f" />
                       <Text className="text-red-500 text-center mt-4 font-medium">
-                        Không thể tạo mã QR do lỗi voucher
+                        {error.message || "Không thể tạo mã QR"}
                       </Text>
                     </View>
                   ) : !paymentData ? (
@@ -453,7 +335,7 @@ export default function QRCodePaymentScreen() {
                       onPress={handleCashPayment}
                       className="bg-white py-3 px-6 rounded-xl w-full items-center"
                       activeOpacity={0.7}
-                      disabled={error && error.type === "voucher"}
+                      disabled={!!error}
                     >
                       <Text className="text-[#ff7e5f] text-lg font-bold">
                         Xác nhận thanh toán
