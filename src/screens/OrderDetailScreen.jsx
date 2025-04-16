@@ -33,6 +33,7 @@ export default function TableDetailsScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  // Update the fetchOrderItems function to properly set the applied voucher from the order data
   const fetchOrderItems = async () => {
     try {
       setLoading(true);
@@ -52,33 +53,18 @@ export default function TableDetailsScreen() {
       setOrder(orderResponse.data.result);
       setError(null);
 
-      // Check if there's an applied voucher
-      try {
-        const voucherResponse = await axios.get(
-          `${API_URL}/api/order-vouchers`,
-          {
-            params: { OrderId: currentOrderId },
-          }
-        );
-
-        if (
-          voucherResponse.data.success &&
-          voucherResponse.data.result.items.length > 0
-        ) {
-          // Get the voucher details
-          const voucherId = voucherResponse.data.result.items[0].voucherId;
-          const voucherDetailResponse = await axios.get(
-            `${API_URL}/api/vouchers/${voucherId}`
-          );
-
-          if (voucherDetailResponse.data.success) {
-            setAppliedVoucher(voucherDetailResponse.data.result);
-          }
+      // Check if there's an applied voucher directly from the order data
+      if (
+        orderResponse.data.result.orderVouchers &&
+        orderResponse.data.result.orderVouchers.length > 0
+      ) {
+        const voucher = orderResponse.data.result.orderVouchers[0].voucher;
+        if (voucher) {
+          setAppliedVoucher(voucher);
         } else {
           setAppliedVoucher(null);
         }
-      } catch (voucherErr) {
-        console.log("Error fetching voucher:", voucherErr);
+      } else {
         setAppliedVoucher(null);
       }
     } catch (err) {
