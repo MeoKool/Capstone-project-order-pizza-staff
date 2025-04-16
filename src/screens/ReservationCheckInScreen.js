@@ -39,7 +39,7 @@ export default function ReservationCheckInScreen({ navigation }) {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://vietsac.id.vn/api/reservations/check?PhoneNumber=${phoneNumber}&IncludeProperties=Table.Zone`
+        `https://vietsac.id.vn/api/reservations/check?PhoneNumber=${phoneNumber}&BookingStatus=Confirmed`
       );
 
       if (!response.ok) {
