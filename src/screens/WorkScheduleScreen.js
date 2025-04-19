@@ -360,7 +360,7 @@ export default function WorkScheduleScreen({ navigation }) {
         const data = await response.json();
 
         if (!data.success) {
-          throw new Error(data.message || "Đăng ký không thành công");
+          throw new Error(data.error.message || "Đăng ký không thành công");
         }
       }
 

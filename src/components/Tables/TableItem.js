@@ -12,6 +12,8 @@ const TableItem = ({ item, onPress, getStatusColor, refreshTables }) => {
         return "Bàn đóng";
       case "Reserved":
         return "Bàn đã đặt trước";
+      case "Locked":
+        return "Bàn đã khóa";
       default:
         return status;
     }

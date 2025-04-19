@@ -14,10 +14,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function AccountSetupScreen({ navigation }) {
   const [formData, setFormData] = useState({
-    phone: "0123456789",
-    name: "Trương Sỹ Quảng",
-    birthDate: new Date("2002-02-12"),
-    department: "Nhân viên phục vụ",
+    phone: "N/A",
+    name: "N/A",
+    birthDate: new Date("N/A"),
+    department: "N/A",
   });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
