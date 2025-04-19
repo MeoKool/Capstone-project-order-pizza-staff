@@ -89,48 +89,91 @@ class EnhancedNotificationService {
   }
 
   handleNotification(notification) {
-    const title = notification.title || "Thông báo";
-    const message = notification.message || "";
-    const type = this.getNotificationType(notification);
+    try {
+      console.log("Received notification:", notification);
 
-    // Add to notification history
-    this.notificationHistory.push({
-      id: Date.now().toString(),
-      title,
-      message,
-      type,
-      timestamp: new Date(),
-      read: false,
-    });
+      // Extract fields from the notification
+      const {
+        id = Date.now().toString(),
+        title = "Thông báo",
+        message = "",
+        createdAt,
+        payload = "",
+        type,
+      } = notification;
 
-    // Limit history to last 50 notifications
-    if (this.notificationHistory.length > 50) {
-      this.notificationHistory.shift();
+      // Format the message to include the zone (payload)
+      const formattedMessage = this.formatNotificationMessage(message, payload);
+
+      // Get notification type based on the type field
+      const notificationType = this.getNotificationType(type);
+
+      // Format timestamp
+      const timestamp = createdAt ? new Date(createdAt) : new Date();
+
+      // Add to notification history
+      this.notificationHistory.push({
+        id,
+        title,
+        message: formattedMessage, // Store the formatted message
+        originalMessage: message, // Store the original message too
+        type: notificationType,
+        timestamp,
+        payload,
+        read: false,
+        rawType: type,
+      });
+
+      // Limit history to last 50 notifications
+      if (this.notificationHistory.length > 50) {
+        this.notificationHistory.shift();
+      }
+
+      // Show toast notification using our enhanced toast
+      EnhancedToast.show({
+        type: notificationType,
+        text1: title,
+        text2: formattedMessage, // Use the formatted message
+        payload,
+      });
+    } catch (error) {
+      console.error("Error handling notification:", error);
+      // Fallback to basic notification display
+      EnhancedToast.show({
+        type: "info",
+        text1: "Thông báo mới",
+        text2: "Bạn có thông báo mới",
+      });
     }
-
-    // Show toast notification using our enhanced toast
-    EnhancedToast.show({
-      type: "warning",
-      text1: title,
-      text2: message,
-    });
   }
 
-  getNotificationType(notification) {
-    // Determine notification type based on content or priority
-    if (notification.priority === "high" || notification.isUrgent) {
-      return "error";
+  formatNotificationMessage(message, payload) {
+    // Clean up the payload (remove extra spaces)
+    const cleanPayload = payload ? payload.trim() : "";
+
+    // If we have a payload (zone), append it to the message
+    if (cleanPayload) {
+      return `${message} tại khu vực ${cleanPayload}`;
     }
 
-    if (notification.priority === "medium" || notification.isWarning) {
-      return "warning";
-    }
+    // If no payload, return the original message
+    return message;
+  }
 
-    if (notification.isSuccess) {
-      return "success";
+  getNotificationType(type) {
+    // Map numeric type to notification type
+    switch (type) {
+      case 0:
+        return "info";
+      case 1:
+        return "warning";
+      case 2:
+        return "success";
+      case 3:
+        return "error";
+      default:
+        return "info";
     }
-
-    return "info";
   }
 
   getNotificationHistory() {
