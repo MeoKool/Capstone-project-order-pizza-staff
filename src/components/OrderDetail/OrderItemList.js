@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
 import { ChevronDown, ChevronUp, X } from "lucide-react-native";
@@ -41,19 +43,19 @@ export default function OrderItemList({
     }));
   };
 
-  const renderSectionHeader = ({ section: { title, count, color } }) => (
+  const renderSectionHeader = ({ section }) => (
     <TouchableOpacity
-      onPress={() => toggleSection(title)}
+      onPress={() => toggleSection(section.title)}
       className="bg-white px-4 py-2 mb-2 rounded-lg flex-row justify-between items-center"
-      style={{ borderLeftWidth: 4, borderLeftColor: color }}
+      style={{ borderLeftWidth: 4, borderLeftColor: section.color }}
     >
-      <Text className="font-bold text-lg" style={{ color: color }}>
-        {title} ({count})
+      <Text className="font-bold text-lg" style={{ color: section.color }}>
+        {section.title} ({section.count})
       </Text>
-      {expandedSections[title] ? (
-        <ChevronUp size={24} color={color} />
+      {expandedSections[section.title] ? (
+        <ChevronUp size={24} color={section.color} />
       ) : (
-        <ChevronDown size={24} color={color} />
+        <ChevronDown size={24} color={section.color} />
       )}
     </TouchableOpacity>
   );
@@ -70,10 +72,13 @@ export default function OrderItemList({
       if (response.data && response.data.success) {
         navigation && navigation.goBack();
       } else {
-        throw new Error(response.data?.error?.message || "Không thể đóng bàn");
+        Alert.alert("Lỗi", "Không thể đóng bàn. Vui lòng thử lại sau.");
       }
     } catch (err) {
       console.error("Error closing table:", err);
+      const errorMessage =
+        err.response?.data?.error?.message || "Có lỗi xảy ra khi đóng bàn";
+      Alert.alert("Lỗi", errorMessage);
     } finally {
       setClosingTable(false);
     }
@@ -94,8 +99,8 @@ export default function OrderItemList({
               disabled={closingTable}
               activeOpacity={0.7}
             >
-              <X size={18} color="white" className="mr-2" />
-              <Text className="text-white font-bold">
+              <X size={18} color="white" />
+              <Text className="text-white font-bold ml-2">
                 {closingTable ? "Đang đóng bàn..." : "Đóng bàn"}
               </Text>
             </TouchableOpacity>
@@ -117,6 +122,9 @@ export default function OrderItemList({
   if (orderItems.length === 0) {
     return (
       <View className="flex-1 justify-center items-center p-4">
+        <Text className="text-white text-lg text-center mb-4">
+          Khách hàng chưa đặt món
+        </Text>
         {tableId && (
           <TouchableOpacity
             className="bg-red-500 rounded-xl py-3 px-6 shadow-lg flex-row items-center"
@@ -124,8 +132,8 @@ export default function OrderItemList({
             disabled={closingTable}
             activeOpacity={0.7}
           >
-            <X size={18} color="white" className="mr-2" />
-            <Text className="text-white font-bold">
+            <X size={18} color="white" />
+            <Text className="text-white font-bold ml-2">
               {closingTable ? "Đang đóng bàn..." : "Đóng bàn"}
             </Text>
           </TouchableOpacity>
@@ -141,14 +149,17 @@ export default function OrderItemList({
       renderItem={({ item }) => (
         <View>
           {renderSectionHeader({ section: item })}
-          {expandedSections[item.title] &&
-            item.data.map((orderItem) => (
-              <OrderItem
-                key={orderItem.id}
-                item={orderItem}
-                onRefresh={onRetry}
-              />
-            ))}
+          {expandedSections[item.title] && (
+            <View>
+              {item.data.map((orderItem) => (
+                <OrderItem
+                  key={orderItem.id}
+                  item={orderItem}
+                  onRefresh={onRetry}
+                />
+              ))}
+            </View>
+          )}
         </View>
       )}
       keyExtractor={(item, index) => index.toString()}
