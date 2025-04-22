@@ -122,9 +122,6 @@ export default function OrderItemList({
   if (orderItems.length === 0) {
     return (
       <View className="flex-1 justify-center items-center p-4">
-        <Text className="text-white text-lg text-center mb-4">
-          Khách hàng chưa đặt món
-        </Text>
         {tableId && (
           <TouchableOpacity
             className="bg-red-500 rounded-xl py-3 px-6 shadow-lg flex-row items-center"
