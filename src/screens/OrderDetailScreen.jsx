@@ -162,24 +162,25 @@ export default function TableDetailsScreen() {
             onBack={() => navigation.goBack()}
             navigation={navigation}
           />
-          <OrderItemList
-            orderItems={orderItems}
-            error={error}
-            onRetry={fetchOrderItems}
-            tableId={tableId}
-            navigation={navigation}
-          />
-          <View className="mb-6"></View>
-          {currentOrderId && (
-            <TotalAndCheckout
-              order={order}
+          <View style={{ flex: 1 }}>
+            <OrderItemList
               orderItems={orderItems}
-              checkingOut={checkingOut}
-              onCheckout={handleCheckout}
-              onPayment={handlePayment}
-              onVoucherApplied={handleVoucherApplied}
+              error={error}
+              onRetry={fetchOrderItems}
+              tableId={tableId}
+              navigation={navigation}
             />
-          )}
+            {currentOrderId && (
+              <TotalAndCheckout
+                order={order}
+                orderItems={orderItems}
+                checkingOut={checkingOut}
+                onCheckout={handleCheckout}
+                onPayment={handlePayment}
+                onVoucherApplied={handleVoucherApplied}
+              />
+            )}
+          </View>
         </SafeAreaView>
       </LinearGradient>
     </GestureHandlerRootView>

@@ -219,7 +219,7 @@ export default function TotalAndCheckout({
   };
 
   return (
-    <View className="absolute bottom-0 left-0 right-0 p-4 bg-[#feb47b] backdrop-blur-sm">
+    <View className="p-4 bg-[#feb47b] backdrop-blur-sm">
       {/* Voucher Modal */}
       <Modal
         animationType="slide"
