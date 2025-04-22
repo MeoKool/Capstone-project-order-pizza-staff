@@ -27,7 +27,7 @@ import { calculateTotalAmount } from "../components/OrderDetail/total-utils";
 // Update the import to use the utility file
 
 const { width } = Dimensions.get("window");
-const API_URL = "https://vietsac.id.vn/pizza-service";
+const API_URL = "https://vietsac.id.vn";
 
 export default function QRCodePaymentScreen() {
   const navigation = useNavigation();

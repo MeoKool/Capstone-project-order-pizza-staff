@@ -12,7 +12,7 @@ import OrderItemList from "../components/OrderDetail/OrderItemList";
 import TotalAndCheckout from "../components/OrderDetail/TotalAndCheckout";
 import Header from "../components/Header";
 
-const API_URL = "https://vietsac.id.vn/pizza-service";
+const API_URL = "https://vietsac.id.vn";
 
 export default function TableDetailsScreen() {
   const [orderItems, setOrderItems] = useState([]);
