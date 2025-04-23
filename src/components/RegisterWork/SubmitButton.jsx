@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,12 +8,11 @@ import {
   ActivityIndicator,
   Animated,
 } from "react-native";
-import { useRef, useEffect } from "react";
 import { CheckCircle } from "lucide-react-native";
 
 const SubmitButton = ({ onPress, disabled }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [scaleAnim] = useState(new Animated.Value(1));
+  const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(fadeAnim, {

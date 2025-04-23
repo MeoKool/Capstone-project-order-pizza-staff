@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   SafeAreaView,
   StatusBar,
   Animated,
-  Alert,
   View,
   Text,
   TouchableOpacity,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,14 +19,17 @@ import WeekCalendar from "../components/RegisterWork/WeekCalendar";
 import TimeSlotSelector from "../components/RegisterWork/TimeSlotSelector";
 import RegistrationSummary from "../components/RegisterWork/RegistrationSummary";
 import SubmitButton from "../components/RegisterWork/SubmitButton";
+import ConfirmationModal from "../components/RegisterWork/ConfirmationModal";
+import { getDayName, formatDateForAPI } from "../utils/getDayName";
 
 export default function WorkScheduleScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("home");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSlots, setSelectedSlots] = useState({});
   const [weekDates, setWeekDates] = useState([]);
-  const [scrollY] = useState(new Animated.Value(0));
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [allAvailableSlots, setAllAvailableSlots] = useState([]); // Store all slots for all days
   const [registeredSlots, setRegisteredSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [staffId, setStaffId] = useState(null);
@@ -34,6 +37,11 @@ export default function WorkScheduleScreen({ navigation }) {
   const [configs, setConfigs] = useState({
     registrationWeekLimit: 1,
     registrationCutoffDay: 1,
+  });
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({
+    title: "",
+    message: "",
   });
 
   // Check staff status on component mount
@@ -46,17 +54,12 @@ export default function WorkScheduleScreen({ navigation }) {
 
           // If staff is fullTime, show alert and navigate back
           if (status.toLowerCase() === "fulltime") {
-            Alert.alert(
-              "Thông báo",
-              "Nhân viên toàn thời gian không cần đăng ký giờ làm việc.",
-              [
-                {
-                  text: "Quay lại",
-                  onPress: () => navigation.goBack(),
-                },
-              ],
-              { cancelable: false }
-            );
+            setConfirmModalData({
+              title: "Thông báo",
+              message:
+                "Nhân viên toàn thời gian không cần đăng ký giờ làm việc.",
+            });
+            setConfirmModalVisible(true);
           }
         }
       } catch (error) {
@@ -149,14 +152,9 @@ export default function WorkScheduleScreen({ navigation }) {
     const dates = [];
     const today = new Date();
 
-    // Find the next Monday (day 1)
+    // Add cutoff days to today to get the start date
     const startDate = new Date(today);
-    const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
-
-    // Calculate days until next Monday
-    // If today is Monday, we still want to show next Monday, so we add 7
-    const daysUntilNextMonday = dayOfWeek === 1 ? 7 : (8 - dayOfWeek) % 7;
-    startDate.setDate(today.getDate() + daysUntilNextMonday);
+    startDate.setDate(today.getDate() + cutoffDay);
 
     // Calculate how many days to show (weekLimit * 7)
     const daysToShow = weekLimit * 7;
@@ -167,12 +165,6 @@ export default function WorkScheduleScreen({ navigation }) {
       date.setDate(startDate.getDate() + i);
       dates.push(date);
     }
-
-    console.log(
-      `Date range: ${startDate.toLocaleDateString()} - ${new Date(
-        new Date(startDate).setDate(startDate.getDate() + daysToShow - 1)
-      ).toLocaleDateString()}`
-    );
 
     setWeekDates(dates);
     setSelectedDate(dates[0]); // Select the first available date
@@ -207,19 +199,56 @@ export default function WorkScheduleScreen({ navigation }) {
     });
   };
 
+  // Fetch all available slots once
+  useEffect(() => {
+    fetchAllAvailableSlots();
+  }, []);
+
   // Fetch available slots when date changes
   useEffect(() => {
-    if (selectedDate) {
-      fetchAvailableSlots();
+    if (selectedDate && allAvailableSlots.length > 0) {
+      filterAvailableSlots();
     }
-  }, [selectedDate]);
+  }, [selectedDate, allAvailableSlots]);
 
-  // Format date to YYYY-MM-DD
-  const formatDateForAPI = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  // Fetch all available slots from API
+  const fetchAllAvailableSlots = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://vietsac.id.vn/api/working-slots");
+      const data = await response.json();
+
+      if (data.success) {
+        setAllAvailableSlots(data.result.items);
+        // Initial filter for the current selected date
+        filterAvailableSlots(data.result.items);
+      } else {
+        setConfirmModalData({
+          title: "Lỗi",
+          message: "Không thể tải ca làm việc",
+        });
+        setConfirmModalVisible(true);
+      }
+    } catch (error) {
+      console.error("Error fetching slots:", error);
+      setConfirmModalData({
+        title: "Lỗi",
+        message: "Không thể kết nối đến máy chủ",
+      });
+      setConfirmModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter available slots based on selected date
+  const filterAvailableSlots = (slots = allAvailableSlots) => {
+    if (!selectedDate || slots.length === 0) return;
+
+    const dayName = getDayName(selectedDate.getDay());
+
+    const filteredSlots = slots.filter((slot) => slot.dayName === dayName);
+    setAvailableSlots(filteredSlots);
   };
 
   // Check if a slot is already registered
@@ -241,57 +270,16 @@ export default function WorkScheduleScreen({ navigation }) {
     return registeredSlot ? registeredSlot.status : null;
   };
 
-  // Fetch available slots from API
-  const fetchAvailableSlots = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        "https://vietsac.id.vn/api/working-slots?TakeCount=1000"
-      );
-      const data = await response.json();
-
-      if (data.success) {
-        // Filter slots for the selected day
-        const dayName = getDayName(selectedDate.getDay());
-        const filteredSlots = data.result.items.filter(
-          (slot) => slot.dayName === dayName
-        );
-
-        setAvailableSlots(filteredSlots);
-      } else {
-        Alert.alert("Lỗi", "Không thể tải ca làm việc");
-      }
-    } catch (error) {
-      console.error("Error fetching slots:", error);
-      Alert.alert("Lỗi", "Không thể kết nối đến máy chủ");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get Vietnamese day name
-  const getDayName = (dayIndex) => {
-    const days = [
-      "Chủ nhật",
-      "Thứ hai",
-      "Thứ ba",
-      "Thứ tư",
-      "Thứ năm",
-      "Thứ sáu",
-      "Thứ bảy",
-    ];
-    return days[dayIndex];
-  };
-
   // Toggle selection of a time slot for a specific date
   const toggleTimeSlot = (date, slotId) => {
     // Check if the slot is already registered
     if (isSlotRegistered(date, slotId)) {
       const status = getSlotRegistrationStatus(date, slotId);
-      Alert.alert(
-        "Thông báo",
-        `Bạn đã đăng ký ca làm việc này (Trạng thái: ${status})`
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: `Bạn đã đăng ký ca làm việc này (Trạng thái: ${status})`,
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -316,12 +304,13 @@ export default function WorkScheduleScreen({ navigation }) {
   };
 
   // Calculate total hours from selected slots
-  const getTotalHours = () => {
+  const getTotalHours = useCallback(() => {
     let total = 0;
 
     Object.entries(selectedSlots).forEach(([dateStr, slotIds]) => {
       slotIds.forEach((slotId) => {
-        const slot = availableSlots.find((s) => s.id === slotId);
+        // Find the slot in allAvailableSlots instead of availableSlots
+        const slot = allAvailableSlots.find((s) => s.id === slotId);
         if (slot) {
           const start = new Date(`2000-01-01T${slot.shiftStart}`);
           const end = new Date(`2000-01-01T${slot.shiftEnd}`);
@@ -332,12 +321,16 @@ export default function WorkScheduleScreen({ navigation }) {
     });
 
     return total.toFixed(1);
-  };
+  }, [selectedSlots, allAvailableSlots]);
 
   // Register for selected slots
   const registerSlots = async () => {
     if (!staffId) {
-      Alert.alert("Lỗi", "Không tìm thấy ID nhân viên");
+      setConfirmModalData({
+        title: "Lỗi",
+        message: "Không tìm thấy ID nhân viên",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -379,18 +372,21 @@ export default function WorkScheduleScreen({ navigation }) {
         }
       }
 
+      setConfirmModalData({
+        title: "Thành công",
+        message: "Đăng ký lịch làm việc thành công!",
+      });
+      setConfirmModalVisible(true);
       setSelectedSlots({});
 
       fetchRegisteredSlots(staffId);
-
-      fetchAvailableSlots();
-
-      // Show a temporary success message
-      const successMessage =
-        "Đăng ký thành công! Bạn có thể tiếp tục đăng ký ca làm việc khác.";
-      Alert.alert("Thành công", successMessage);
+      filterAvailableSlots();
     } catch (error) {
-      Alert.alert("Lỗi", error.message || "Không thể đăng ký ca làm việc");
+      setConfirmModalData({
+        title: "Lỗi",
+        message: error.message || "Không thể đăng ký ca làm việc",
+      });
+      setConfirmModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -399,7 +395,11 @@ export default function WorkScheduleScreen({ navigation }) {
   // Submit the work schedule
   const handleSubmit = () => {
     if (Object.keys(selectedSlots).length === 0) {
-      Alert.alert("Thông báo", "Vui lòng chọn ít nhất một ca làm việc");
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Vui lòng chọn ít nhất một ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -412,7 +412,8 @@ export default function WorkScheduleScreen({ navigation }) {
 
         const timeSlots = slotIds
           .map((slotId) => {
-            const slot = availableSlots.find((s) => s.id === slotId);
+            // Find the slot in allAvailableSlots instead of availableSlots
+            const slot = allAvailableSlots.find((s) => s.id === slotId);
             if (slot) {
               return `${slot.shiftStart.substring(
                 0,
@@ -428,27 +429,38 @@ export default function WorkScheduleScreen({ navigation }) {
       })
       .join("\n");
 
-    Alert.alert(
-      "Xác nhận đăng ký",
-      `Lịch làm việc của bạn:\n\n${formattedSchedule}\n\nTổng số giờ: ${getTotalHours()} giờ`,
-      [
-        {
-          text: "Hủy",
-          style: "cancel",
-        },
-        {
-          text: "Xác nhận",
-          onPress: registerSlots,
-        },
-      ]
-    );
+    setConfirmModalData({
+      title: "Xác nhận đăng ký",
+      message: `Lịch làm việc của bạn:\n\n${formattedSchedule}\n\nTổng số giờ: ${getTotalHours()} giờ`,
+    });
+    setConfirmModalVisible(true);
   };
 
-  const headerHeight = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [90, 80],
-    extrapolate: "clamp",
-  });
+  const { height } = Dimensions.get("window");
+  const headerHeight = height * 0.1;
+
+  // Handle confirmation modal actions
+  const handleConfirmModalConfirm = () => {
+    if (confirmModalData.title === "Xác nhận đăng ký") {
+      registerSlots();
+    } else if (
+      confirmModalData.title === "Thông báo" &&
+      staffStatus === "fulltime"
+    ) {
+      navigation.goBack();
+    }
+    setConfirmModalVisible(false);
+  };
+
+  const handleConfirmModalCancel = () => {
+    setConfirmModalVisible(false);
+  };
+
+  // Update the setSelectedDate function to ensure it creates a new Date object
+  const handleDateSelection = (date) => {
+    // Create a new Date object to ensure state update is triggered
+    setSelectedDate(new Date(date.getTime()));
+  };
 
   // Only render the component if staff is not fullTime
   if (staffStatus === "fulltime") {
@@ -463,6 +475,13 @@ export default function WorkScheduleScreen({ navigation }) {
           <Text className="text-white text-xl font-bold text-center px-6">
             Nhân viên không cần đăng ký giờ làm việc.
           </Text>
+          <ConfirmationModal
+            visible={confirmModalVisible}
+            title={confirmModalData.title}
+            message={confirmModalData.message}
+            onConfirm={handleConfirmModalConfirm}
+            onCancel={handleConfirmModalCancel}
+          />
         </SafeAreaView>
       </LinearGradient>
     );
@@ -519,8 +538,8 @@ export default function WorkScheduleScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
                 <Text className="text-white mt-1 opacity-90">
-                  Bạn có thể đăng ký lịch làm việc từ Thứ hai tới và trong{" "}
-                  {configs.registrationWeekLimit} tuần tiếp theo
+                  Bạn có thể đăng ký lịch làm việc trước{" "}
+                  {configs.registrationWeekLimit} tuần
                 </Text>
                 <Text className="text-white opacity-90">
                   Thời gian đăng ký trước {configs.registrationCutoffDay} ngày
@@ -532,11 +551,12 @@ export default function WorkScheduleScreen({ navigation }) {
             <WeekCalendar
               weekDates={weekDates}
               selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
+              setSelectedDate={handleDateSelection}
             />
 
             {/* Time Slots Component */}
             <TimeSlotSelector
+              key={selectedDate.toDateString()}
               selectedDate={selectedDate}
               selectedSlots={selectedSlots}
               toggleTimeSlot={toggleTimeSlot}
@@ -549,8 +569,10 @@ export default function WorkScheduleScreen({ navigation }) {
 
             {/* Registration Summary Component */}
             <RegistrationSummary
+              key="registration-summary"
               selectedSlots={selectedSlots}
               getTotalHours={getTotalHours}
+              availableSlots={allAvailableSlots}
             />
 
             {/* Submit Button Component */}
@@ -562,6 +584,15 @@ export default function WorkScheduleScreen({ navigation }) {
             onTabPress={(tabKey) => {
               setActiveTab(tabKey);
             }}
+          />
+
+          {/* Confirmation Modal */}
+          <ConfirmationModal
+            visible={confirmModalVisible}
+            title={confirmModalData.title}
+            message={confirmModalData.message}
+            onConfirm={handleConfirmModalConfirm}
+            onCancel={handleConfirmModalCancel}
           />
         </SafeAreaView>
       </LinearGradient>

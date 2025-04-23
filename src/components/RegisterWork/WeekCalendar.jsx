@@ -1,5 +1,4 @@
-"use client";
-
+import { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +6,8 @@ import {
   ScrollView,
   Animated,
 } from "react-native";
-import { useRef, useEffect } from "react";
 import { Calendar } from "lucide-react-native";
+import { formatDate, isToday } from "../../utils/getDayName";
 
 const DAYS_OF_WEEK = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const FULL_DAYS = [
@@ -23,8 +22,7 @@ const FULL_DAYS = [
 
 const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
   const scrollViewRef = useRef(null);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [fadeAnim] = useState(new Animated.Value(0));
 
   // Animate calendar on mount
   useEffect(() => {
@@ -35,43 +33,37 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
     }).start();
   }, []);
 
-  // Format date as DD/MM
-  const formatDate = (date) => {
-    return `${date.getDate()}/${date.getMonth() + 1}`;
-  };
-
-  // Check if a date is today
-  const isToday = (date) => {
-    const today = new Date();
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
-  };
-
   // Check if a date is selected
   const isDateSelected = (date) => {
     return selectedDate && date.toDateString() === selectedDate.toDateString();
   };
 
-  // Handle date selection with animation
+  // Handle date selection
   const handleDateSelect = (date) => {
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.92,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setSelectedDate(date);
+    // Create a new Date object to ensure state update is triggered
+    const newDate = new Date(date.getTime());
+    setSelectedDate(newDate);
   };
+
+  // Scroll to selected date when weekDates change
+  useEffect(() => {
+    if (weekDates.length > 0 && scrollViewRef.current) {
+      // Find the index of the selected date in weekDates
+      const selectedIndex = weekDates.findIndex(
+        (date) => date.toDateString() === selectedDate.toDateString()
+      );
+
+      if (selectedIndex >= 0) {
+        // Scroll to the selected date with animation
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({
+            x: selectedIndex * 90, // Approximate width of each date item
+            animated: true,
+          });
+        }, 100);
+      }
+    }
+  }, [weekDates, selectedDate]);
 
   return (
     <Animated.View className="px-6 mt-2" style={{ opacity: fadeAnim }}>
@@ -101,12 +93,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
           const today = isToday(date);
 
           return (
-            <Animated.View
-              key={index}
-              style={{
-                transform: isSelected ? [{ scale: scaleAnim }] : [{ scale: 1 }],
-              }}
-            >
+            <View key={index}>
               <TouchableOpacity
                 onPress={() => handleDateSelect(date)}
                 className={`mr-3 items-center justify-center px-4 py-3.5 rounded-xl ${
@@ -124,6 +111,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                   shadowRadius: 6,
                   elevation: isSelected ? 4 : 0,
                 }}
+                activeOpacity={0.7}
               >
                 <Text
                   className={`font-medium ${
@@ -147,7 +135,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                   />
                 )}
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           );
         })}
       </ScrollView>

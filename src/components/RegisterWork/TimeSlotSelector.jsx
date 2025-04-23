@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,7 +9,6 @@ import {
   Animated,
 } from "react-native";
 import { Calendar, Clock, Check, Plus, AlertCircle } from "lucide-react-native";
-import { useRef, useEffect } from "react";
 
 const DAYS_OF_WEEK = [
   "Chủ nhật",
@@ -30,35 +30,18 @@ const TimeSlotSelector = ({
   getSlotRegistrationStatus,
   loading,
 }) => {
-  // Animation values for list items
-  const fadeAnim = useRef(
-    availableSlots.map(() => new Animated.Value(0))
-  ).current;
-
-  useEffect(() => {
-    // Animate items when they load
-    if (!loading && availableSlots.length > 0) {
-      availableSlots.forEach((_, index) => {
-        Animated.timing(fadeAnim[index], {
-          toValue: 1,
-          duration: 300,
-          delay: index * 50,
-          useNativeDriver: true,
-        }).start();
-      });
-    }
-  }, [loading, availableSlots]);
+  // Add this near the top of the TimeSlotSelector component
+  useEffect(() => {}, [selectedDate, availableSlots]);
+  // Format time from 24-hour format to 12-hour format
+  const formatTime = (time) => {
+    if (!time) return "";
+    return time.substring(0, 5); // Just take HH:MM part
+  };
 
   // Check if a time slot is selected for a specific date
   const isSlotSelected = (date, slotId) => {
     const dateStr = date.toDateString();
     return selectedSlots[dateStr] && selectedSlots[dateStr].includes(slotId);
-  };
-
-  // Format time from 24-hour format to 12-hour format
-  const formatTime = (time) => {
-    if (!time) return "";
-    return time.substring(0, 5); // Just take HH:MM part
   };
 
   // Get status color based on registration status
@@ -89,8 +72,26 @@ const TimeSlotSelector = ({
     }
   };
 
+  // Render empty state when no slots are available
+  const renderEmptyState = () => (
+    <View className="p-8 items-center">
+      <Calendar size={40} color="#9CA3AF" />
+      <Text className="text-gray-500 mt-2 text-center">
+        Không có ca làm việc cho ngày này
+      </Text>
+    </View>
+  );
+
+  // Render loading state
+  const renderLoadingState = () => (
+    <View className="p-8 items-center">
+      <ActivityIndicator size="large" color="#FF6B6B" />
+      <Text className="mt-2 text-gray-500">Đang tải ca làm việc...</Text>
+    </View>
+  );
+
   return (
-    <View className="px-6 mt-4">
+    <View className="px-6 mt-4" key={selectedDate.toDateString()}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-white text-xl font-bold">Chọn ca làm việc</Text>
         <View className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full">
@@ -113,148 +114,167 @@ const TimeSlotSelector = ({
         }}
       >
         {loading ? (
-          <View className="p-8 items-center">
-            <ActivityIndicator size="large" color="#FF6B6B" />
-            <Text className="mt-2 text-gray-500">Đang tải ca làm việc...</Text>
-          </View>
+          renderLoadingState()
         ) : availableSlots.length === 0 ? (
-          <View className="p-8 items-center">
-            <Calendar size={40} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-2 text-center">
-              Không có ca làm việc cho ngày này
-            </Text>
-          </View>
+          renderEmptyState()
         ) : (
-          availableSlots.map((slot, index) => {
-            const isSelected = isSlotSelected(selectedDate, slot.id);
-            const isRegistered = isSlotRegistered(selectedDate, slot.id);
-            const registrationStatus = getSlotRegistrationStatus(
-              selectedDate,
-              slot.id
-            );
-
-            return (
-              <Animated.View
+          <View>
+            {availableSlots.map((slot, index) => (
+              <TimeSlotItem
                 key={slot.id}
-                style={{
-                  opacity: fadeAnim[index],
-                  transform: [
-                    {
-                      translateY: fadeAnim[index].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [20, 0],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <TouchableOpacity
-                  className={`flex-row items-center p-4 ${
-                    index !== availableSlots.length - 1
-                      ? "border-b border-gray-100"
-                      : ""
-                  } ${isSelected ? "bg-orange-50" : ""} ${
-                    isRegistered ? getStatusBgColor(registrationStatus) : ""
-                  }`}
-                  onPress={() => toggleTimeSlot(selectedDate, slot.id)}
-                  disabled={isRegistered}
-                  style={{
-                    transform: [{ scale: isSelected ? 1.01 : 1 }],
-                  }}
-                >
-                  <View
-                    className={`w-14 h-14 rounded-full items-center justify-center ${
-                      isRegistered
-                        ? "bg-gray-200"
-                        : isSelected
-                        ? "bg-orange-100"
-                        : "bg-gray-100"
-                    }`}
-                  >
-                    {isRegistered ? (
-                      <AlertCircle size={24} color="#6B7280" />
-                    ) : (
-                      <Clock
-                        size={24}
-                        color={isSelected ? "#FF6B6B" : "#9CA3AF"}
-                      />
-                    )}
-                  </View>
-                  <View className="ml-4 flex-1">
-                    <Text
-                      className={`font-semibold text-base ${
-                        isRegistered
-                          ? "text-gray-600"
-                          : isSelected
-                          ? "text-orange-500"
-                          : "text-gray-800"
-                      }`}
-                    >
-                      {formatTime(slot.shiftStart)} -{" "}
-                      {formatTime(slot.shiftEnd)}
-                    </Text>
-                    <Text className="text-gray-500 text-sm">
-                      {slot.shiftName}
-                    </Text>
-                    {isRegistered ? (
-                      <View className="flex-row items-center mt-1">
-                        <View
-                          className={`w-2 h-2 rounded-full mr-1 ${
-                            registrationStatus === "Approved"
-                              ? "bg-green-500"
-                              : registrationStatus === "Onhold"
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                          }`}
-                        />
-                        <Text
-                          className={`text-xs ${getStatusColor(
-                            registrationStatus
-                          )}`}
-                        >
-                          Đã đăng ký •{" "}
-                          {registrationStatus === "Approved"
-                            ? "Chấp thuận"
-                            : registrationStatus === "Onhold"
-                            ? "Trong hàng chờ"
-                            : registrationStatus === "Rejected"
-                            ? "Từ chối"
-                            : registrationStatus}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View className="flex-row items-center mt-1">
-                        <View className="w-2 h-2 rounded-full bg-gray-300 mr-1" />
-                        <Text className="text-gray-400 text-xs">
-                          {slot.capacity} người
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <View
-                    className={`w-10 h-10 rounded-full items-center justify-center ${
-                      isRegistered
-                        ? "bg-gray-300"
-                        : isSelected
-                        ? "bg-orange-500"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    {isRegistered ? (
-                      <Check size={20} color="#6B7280" />
-                    ) : isSelected ? (
-                      <Check size={20} color="white" />
-                    ) : (
-                      <Plus size={20} color="#9CA3AF" />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })
+                slot={slot}
+                index={index}
+                isSelected={isSlotSelected(selectedDate, slot.id)}
+                isRegistered={isSlotRegistered(selectedDate, slot.id)}
+                registrationStatus={getSlotRegistrationStatus(
+                  selectedDate,
+                  slot.id
+                )}
+                toggleTimeSlot={toggleTimeSlot}
+                selectedDate={selectedDate}
+                getStatusBgColor={getStatusBgColor}
+                getStatusColor={getStatusColor}
+                formatTime={formatTime}
+                availableSlots={availableSlots}
+              />
+            ))}
+          </View>
         )}
       </View>
     </View>
+  );
+};
+
+const TimeSlotItem = ({
+  slot,
+  index,
+  isSelected,
+  isRegistered,
+  registrationStatus,
+  toggleTimeSlot,
+  selectedDate,
+  getStatusBgColor,
+  getStatusColor,
+  formatTime,
+  availableSlots,
+}) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYAnim, {
+        toValue: 0,
+        duration: 300,
+        delay: index * 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: fadeAnim,
+        transform: [{ translateY: translateYAnim }],
+      }}
+    >
+      <TouchableOpacity
+        className={`flex-row items-center p-4 ${
+          index !== availableSlots?.length - 1 ? "border-b border-gray-100" : ""
+        } ${isSelected ? "bg-orange-50" : ""} ${
+          isRegistered ? getStatusBgColor(registrationStatus) : ""
+        }`}
+        onPress={() => toggleTimeSlot(selectedDate, slot.id)}
+        disabled={isRegistered}
+        style={{
+          transform: [{ scale: isSelected ? 1.01 : 1 }],
+        }}
+      >
+        <View
+          className={`w-14 h-14 rounded-full items-center justify-center ${
+            isRegistered
+              ? "bg-gray-200"
+              : isSelected
+              ? "bg-orange-100"
+              : "bg-gray-100"
+          }`}
+        >
+          {isRegistered ? (
+            <AlertCircle size={24} color="#6B7280" />
+          ) : (
+            <Clock size={24} color={isSelected ? "#FF6B6B" : "#9CA3AF"} />
+          )}
+        </View>
+        <View className="ml-4 flex-1">
+          <Text
+            className={`font-semibold text-base ${
+              isRegistered
+                ? "text-gray-600"
+                : isSelected
+                ? "text-orange-500"
+                : "text-gray-800"
+            }`}
+          >
+            {formatTime(slot.shiftStart)} - {formatTime(slot.shiftEnd)}
+          </Text>
+          <Text className="text-gray-500 text-sm">{slot.shiftName}</Text>
+          {isRegistered ? (
+            <View className="flex-row items-center mt-1">
+              <View
+                className={`w-2 h-2 rounded-full mr-1 ${
+                  registrationStatus === "Approved"
+                    ? "bg-green-500"
+                    : registrationStatus === "Onhold"
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+                }`}
+              />
+              <Text className={`text-xs ${getStatusColor(registrationStatus)}`}>
+                Đã đăng ký •{" "}
+                {registrationStatus === "Approved"
+                  ? "Chấp thuận"
+                  : registrationStatus === "Onhold"
+                  ? "Trong hàng chờ"
+                  : registrationStatus === "Rejected"
+                  ? "Từ chối"
+                  : registrationStatus}
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-row items-center mt-1">
+              <View className="w-2 h-2 rounded-full bg-gray-300 mr-1" />
+              <Text className="text-gray-400 text-xs">
+                {slot.capacity} người
+              </Text>
+            </View>
+          )}
+        </View>
+        <View
+          className={`w-10 h-10 rounded-full items-center justify-center ${
+            isRegistered
+              ? "bg-gray-300"
+              : isSelected
+              ? "bg-orange-500"
+              : "bg-gray-200"
+          }`}
+        >
+          {isRegistered ? (
+            <Check size={20} color="#6B7280" />
+          ) : isSelected ? (
+            <Check size={20} color="white" />
+          ) : (
+            <Plus size={20} color="#9CA3AF" />
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
