@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -21,16 +22,65 @@ import {
   CheckCircle,
   ArrowLeft,
   Clock,
+  AlertTriangle,
 } from "lucide-react-native";
 import { format } from "date-fns";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 export default function ReservationCheckInScreen({ navigation }) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [hasNoZones, setHasNoZones] = useState(false);
+  const [showNoZonesModal, setShowNoZonesModal] = useState(false);
+
+  // Check if staff has assigned zones
+  useEffect(() => {
+    const checkStaffZones = async () => {
+      try {
+        const staffId = await AsyncStorage.getItem("staffId");
+        if (!staffId) {
+          throw new Error("Staff ID not found");
+        }
+
+        const response = await axios.get(
+          `https://vietsac.id.vn/api/staff-zones?StaffId=${staffId}&IncludeProperties=Zone`
+        );
+
+        if (!response.data.success) {
+          throw new Error("Failed to fetch staff zones");
+        }
+
+        const staffZoneData = response.data.result.items.map(
+          (item) => item.zone
+        );
+        const noZones = staffZoneData.length === 0;
+
+        setHasNoZones(noZones);
+        if (noZones) {
+          setShowNoZonesModal(true);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching staff zones:", err);
+        setHasNoZones(true);
+        setShowNoZonesModal(true);
+        setLoading(false);
+      }
+    };
+
+    checkStaffZones();
+  }, []);
 
   const checkReservation = async () => {
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     if (!phoneNumber || phoneNumber.length < 10) {
       Alert.alert("Lỗi", "Vui lòng nhập số điện thoại hợp lệ");
       return;
@@ -87,6 +137,11 @@ export default function ReservationCheckInScreen({ navigation }) {
   };
 
   const handleCheckIn = async (reservationId) => {
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     setCheckingIn(true);
     try {
       const response = await fetch(
@@ -325,6 +380,22 @@ export default function ReservationCheckInScreen({ navigation }) {
     );
   };
 
+  if (loading && !showNoZonesModal) {
+    return (
+      <LinearGradient
+        colors={["#ff7e5f", "#feb47b"]}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="white" />
+          <Text className="text-white mt-4">Đang tải...</Text>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
   return (
     <>
       <StatusBar
@@ -339,6 +410,41 @@ export default function ReservationCheckInScreen({ navigation }) {
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView className="flex-1">
+          {/* No Zones Modal - Only shows when user tries to interact */}
+          <Modal
+            visible={showNoZonesModal}
+            transparent={true}
+            animationType="fade"
+          >
+            <View className="flex-1 bg-black/70 justify-center items-center p-5">
+              <View className="bg-white rounded-xl p-6 w-full max-w-md">
+                <View className="items-center mb-4">
+                  <View className="bg-red-100 p-3 rounded-full mb-2">
+                    <AlertTriangle size={32} color="#ef4444" />
+                  </View>
+                  <Text className="text-xl font-bold text-center">
+                    Không có quyền truy cập
+                  </Text>
+                </View>
+
+                <Text className="text-gray-700 text-center mb-6">
+                  Bạn chưa được phân công khu vực nào. Vui lòng liên hệ quản lý
+                  để được phân công khu vực.
+                </Text>
+
+                <TouchableOpacity
+                  className="bg-[#ff7e5f] py-3 rounded-lg"
+                  onPress={() => {
+                    setShowNoZonesModal(false);
+                    navigation.goBack();
+                  }}
+                >
+                  <Text className="text-white font-bold text-center">OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
           <View className="px-6 pt-12 pb-4">
             <View className="flex-row items-center mb-4">
               <TouchableOpacity
