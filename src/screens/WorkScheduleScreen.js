@@ -377,7 +377,6 @@ export default function WorkScheduleScreen({ navigation }) {
         }
       }
 
-      Alert.alert("Thành công", "Đăng ký lịch làm việc thành công!");
       setSelectedSlots({});
 
       fetchRegisteredSlots(staffId);
