@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,10 +8,14 @@ import {
   StatusBar,
   SafeAreaView,
   TouchableOpacity,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useCameraPermissions } from "expo-camera";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { AlertTriangle } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import PermissionRequest from "../components/QRCheckin/PermissionRequest";
 import CameraScanner from "../components/QRCheckin/CameraScanner";
@@ -23,11 +29,13 @@ export default function QRCheckInScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState("back");
   const [scanned, setScanned] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [registerInfo, setRegisterInfo] = useState(null);
   const [tables, setTables] = useState([]);
   const [selectedTableId, setSelectedTableId] = useState(null);
   const [step, setStep] = useState("scan"); // scan | checkedIn | selectTable
+  const [hasNoZones, setHasNoZones] = useState(false);
+  const [showNoZonesModal, setShowNoZonesModal] = useState(false);
 
   useEffect(() => {
     if (permission?.status !== "granted") {
@@ -35,8 +43,55 @@ export default function QRCheckInScreen({ navigation }) {
     }
   }, [permission]);
 
+  // Check if staff has assigned zones
+  useEffect(() => {
+    const checkStaffZones = async () => {
+      try {
+        const staffId = await AsyncStorage.getItem("staffId");
+        if (!staffId) {
+          throw new Error("Staff ID not found");
+        }
+
+        const response = await axios.get(
+          `https://vietsac.id.vn/api/staff-zones?StaffId=${staffId}&IncludeProperties=Zone`
+        );
+
+        if (!response.data.success) {
+          throw new Error("Failed to fetch staff zones");
+        }
+
+        const staffZoneData = response.data.result.items.map(
+          (item) => item.zone
+        );
+        const noZones = staffZoneData.length === 0;
+
+        setHasNoZones(noZones);
+        // Show modal immediately if they have no zones
+        if (noZones) {
+          setShowNoZonesModal(true);
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching staff zones:", err);
+        setHasNoZones(true);
+        setShowNoZonesModal(true);
+        setLoading(false);
+      }
+    };
+
+    checkStaffZones();
+  }, []);
+
   const handleScanned = async ({ data }) => {
     if (scanned) return;
+
+    // Check if staff has no zones and show modal instead
+    if (hasNoZones) {
+      setScanned(true);
+      setShowNoZonesModal(true);
+      return;
+    }
+
     setScanned(true);
     setLoading(true);
 
@@ -60,7 +115,9 @@ export default function QRCheckInScreen({ navigation }) {
       // Nếu chưa check-in thì thực hiện check-in
       await axios.post(
         `https://vietsac.id.vn/api/workshop-register/check-in-workshop`,
-        { workshopRegisterId: register.id }
+        {
+          workshopRegisterId: register.id,
+        }
       );
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể xử lý mã QR.");
@@ -71,6 +128,12 @@ export default function QRCheckInScreen({ navigation }) {
   };
 
   const fetchTables = async () => {
+    // Check if staff has no zones and show modal instead
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     try {
       setLoading(true);
       const tableRes = await axios.get(
@@ -88,6 +151,12 @@ export default function QRCheckInScreen({ navigation }) {
   };
 
   const assignTable = async () => {
+    // Check if staff has no zones and show modal instead
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     if (!selectedTableId || !registerInfo?.id) return;
     try {
       setLoading(true);
@@ -129,6 +198,25 @@ export default function QRCheckInScreen({ navigation }) {
       navigation.goBack();
     }
   };
+
+  if (loading && !showNoZonesModal) {
+    return (
+      <View style={{ flex: 1, backgroundColor: GRADIENT_COLORS[0] }}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={GRADIENT_COLORS[0]}
+        />
+        <LinearGradient colors={GRADIENT_COLORS} style={{ flex: 1 }}>
+          <SafeAreaView
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            <ActivityIndicator size="large" color="white" />
+            <Text style={{ color: "white", marginTop: 16 }}>Đang tải...</Text>
+          </SafeAreaView>
+        </LinearGradient>
+      </View>
+    );
+  }
 
   if (!permission || permission.status !== "granted") {
     return <PermissionRequest onRequest={requestPermission} />;
@@ -182,13 +270,61 @@ export default function QRCheckInScreen({ navigation }) {
             </View>
 
             {step === "scan" && (
-              <CameraScanner
-                facing={facing}
-                setFacing={setFacing}
-                scanned={scanned}
-                onScanned={handleScanned}
-                onRetry={() => setScanned(false)}
-              />
+              <>
+                {hasNoZones ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                      borderRadius: 12,
+                      padding: 20,
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "#FEE2E2",
+                        padding: 12,
+                        borderRadius: 50,
+                        marginBottom: 16,
+                      }}
+                    >
+                      <AlertTriangle size={32} color="#EF4444" />
+                    </View>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Không có quyền truy cập
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        textAlign: "center",
+                        opacity: 0.8,
+                        marginBottom: 20,
+                      }}
+                    >
+                      Bạn chưa được phân công khu vực nào. Vui lòng liên hệ quản
+                      lý để được phân công khu vực.
+                    </Text>
+                  </View>
+                ) : (
+                  <CameraScanner
+                    facing={facing}
+                    setFacing={setFacing}
+                    scanned={scanned}
+                    onScanned={handleScanned}
+                    onRetry={() => setScanned(false)}
+                  />
+                )}
+              </>
             )}
 
             {step === "checkedIn" && registerInfo && !loading && (
