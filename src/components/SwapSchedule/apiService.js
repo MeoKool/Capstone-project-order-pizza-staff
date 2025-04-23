@@ -34,7 +34,7 @@ export const fetchMyShifts = async (staffId) => {
 export const fetchAvailableShifts = async (workingDate) => {
   try {
     const response = await fetch(
-      `${BASE_URL}/staff-zone-schedules?WorkingDate=${workingDate}&IncludeProperties=WorkingSlot`
+      `${BASE_URL}/staff-zone-schedules?StaffStatus=PartTime&WorkingDate=${workingDate}&IncludeProperties=WorkingSlot`
     );
 
     if (!response.ok) {
