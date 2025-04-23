@@ -8,12 +8,13 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Modal,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Search, X, Star } from "lucide-react-native";
+import { Search, X, Star, AlertTriangle } from "lucide-react-native";
 import LoadingScreen from "./LoadingScreen";
 import Header from "../components/Header";
 import SearchBar from "../components/Tables/SearchBar";
@@ -35,6 +36,8 @@ export default function TablesScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const navigation = useNavigation();
   const scrollViewRef = useRef(null);
+  const [hasNoZones, setHasNoZones] = useState(false);
+  const [showNoZonesModal, setShowNoZonesModal] = useState(false);
 
   const fetchStaffZones = useCallback(async () => {
     try {
@@ -53,9 +56,14 @@ export default function TablesScreen() {
 
       const staffZoneData = response.data.result.items.map((item) => item.zone);
       setStaffZones(staffZoneData);
+
+      // Set hasNoZones state based on whether staff has any zones
+      setHasNoZones(staffZoneData.length === 0);
+
       return staffZoneData;
     } catch (err) {
       console.error("Error fetching staff zones:", err);
+      setHasNoZones(true);
       return [];
     }
   }, []);
@@ -163,6 +171,12 @@ export default function TablesScreen() {
   };
 
   const openTable = async (tableId) => {
+    // Check if staff has no zones and show modal instead
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     try {
       setLoading(true);
       await axios.put(`https://vietsac.id.vn/api/tables/open-table/${tableId}`);
@@ -178,6 +192,12 @@ export default function TablesScreen() {
   };
 
   const handleTablePress = (table) => {
+    // Check if staff has no zones and show modal instead
+    if (hasNoZones) {
+      setShowNoZonesModal(true);
+      return;
+    }
+
     if (table.status === "Closing") {
       // If table status is Closing, call API to open the table
       openTable(table.id);
@@ -253,6 +273,38 @@ export default function TablesScreen() {
           title={isSearching ? "Tất cả bàn" : "Bàn của bạn"}
         />
 
+        {/* No Zones Modal - Only shows when user tries to interact with a table */}
+        <Modal
+          visible={showNoZonesModal}
+          transparent={true}
+          animationType="fade"
+        >
+          <View className="flex-1 bg-black/70 justify-center items-center p-5">
+            <View className="bg-white rounded-xl p-6 w-full max-w-md">
+              <View className="items-center mb-4">
+                <View className="bg-red-100 p-3 rounded-full mb-2">
+                  <AlertTriangle size={32} color="#ef4444" />
+                </View>
+                <Text className="text-xl font-bold text-center">
+                  Không có quyền truy cập
+                </Text>
+              </View>
+
+              <Text className="text-gray-700 text-center mb-6">
+                Bạn chưa được phân công khu vực nào. Vui lòng liên hệ quản lý để
+                được phân công khu vực.
+              </Text>
+
+              <TouchableOpacity
+                className="bg-[#ff7e5f] py-3 rounded-lg"
+                onPress={() => setShowNoZonesModal(false)}
+              >
+                <Text className="text-white font-bold text-center">OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         <View className="px-4 mb-2">
           <SearchBar
             value={searchQuery}
@@ -286,10 +338,9 @@ export default function TablesScreen() {
         </View>
 
         {staffZones.length === 0 && !isSearching && !selectedStatus && (
-          <View className="mx-4 mb-6 p-5 bg-white/20 rounded-xl border border-white/30">
+          <View className="mx-4 mb-6 p-5 bg-red-500 rounded-xl border border-white/30">
             <Text className="text-white text-center font-medium">
-              Bạn chưa được phân công khu vực nào. Hãy tìm kiếm để xem tất cả
-              các bàn.
+              Bạn chưa được phân công khu vực nào!
             </Text>
           </View>
         )}
