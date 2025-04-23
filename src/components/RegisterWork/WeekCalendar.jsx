@@ -7,7 +7,7 @@ import {
   ScrollView,
   Animated,
 } from "react-native";
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Calendar } from "lucide-react-native";
 
 const DAYS_OF_WEEK = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -24,6 +24,16 @@ const FULL_DAYS = [
 const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
   const scrollViewRef = useRef(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate calendar on mount
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   // Format date as DD/MM
   const formatDate = (date) => {
@@ -49,13 +59,13 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
   const handleDateSelect = (date) => {
     Animated.sequence([
       Animated.timing(scaleAnim, {
-        toValue: 0.95,
+        toValue: 0.92,
         duration: 100,
         useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
         toValue: 1,
-        duration: 100,
+        duration: 150,
         useNativeDriver: true,
       }),
     ]).start();
@@ -64,12 +74,12 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
   };
 
   return (
-    <View className="px-6 mt-2">
+    <Animated.View className="px-6 mt-2" style={{ opacity: fadeAnim }}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-white text-xl font-bold">Chọn ngày làm việc</Text>
-        <View className="flex-row items-center bg-white/20 px-3 py-1 rounded-full">
+        <View className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full">
           <Calendar size={16} color="white" />
-          <Text className="text-white ml-1 text-sm">
+          <Text className="text-white ml-1.5 text-sm font-medium">
             {FULL_DAYS[selectedDate.getDay()]}, {selectedDate.getDate()}/
             {selectedDate.getMonth() + 1}
           </Text>
@@ -99,7 +109,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
             >
               <TouchableOpacity
                 onPress={() => handleDateSelect(date)}
-                className={`mr-3 items-center justify-center px-4 py-3 rounded-xl ${
+                className={`mr-3 items-center justify-center px-4 py-3.5 rounded-xl ${
                   isSelected
                     ? "bg-white"
                     : today
@@ -107,12 +117,12 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                     : "bg-white/20"
                 }`}
                 style={{
-                  minWidth: 80,
+                  minWidth: 85,
                   shadowColor: isSelected ? "#000" : "transparent",
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: isSelected ? 3 : 0,
+                  shadowOpacity: 0.15,
+                  shadowRadius: 6,
+                  elevation: isSelected ? 4 : 0,
                 }}
               >
                 <Text
@@ -123,7 +133,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                   {DAYS_OF_WEEK[date.getDay()]}
                 </Text>
                 <Text
-                  className={`text-lg font-bold mt-1 ${
+                  className={`text-xl font-bold mt-1 ${
                     isSelected ? "text-orange-500" : "text-white"
                   }`}
                 >
@@ -131,7 +141,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
                 </Text>
                 {today && (
                   <View
-                    className={`w-2 h-2 rounded-full mt-1 ${
+                    className={`w-2 h-2 rounded-full mt-1.5 ${
                       isSelected ? "bg-orange-500" : "bg-white"
                     }`}
                   />
@@ -141,7 +151,7 @@ const WeekCalendar = ({ weekDates, selectedDate, setSelectedDate }) => {
           );
         })}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 };
 

@@ -245,7 +245,9 @@ export default function WorkScheduleScreen({ navigation }) {
   const fetchAvailableSlots = async () => {
     try {
       setLoading(true);
-      const response = await fetch("https://vietsac.id.vn/api/working-slots");
+      const response = await fetch(
+        "https://vietsac.id.vn/api/working-slots?TakeCount=1000"
+      );
       const data = await response.json();
 
       if (data.success) {
