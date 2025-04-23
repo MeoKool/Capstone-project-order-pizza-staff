@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -41,15 +43,25 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
   const calculateDateRange = () => {
     const today = new Date();
 
-    // Start date is today + cutoff days
+    // Find the next Sunday (day 0)
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() + registrationCutoffDay);
+    const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
 
-    // End date is start date + (weeks * 7 days)
+    // Calculate days until next Sunday
+    // If today is Sunday, we still want to show next Sunday, so we add 7
+    const daysUntilNextSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+    startDate.setDate(today.getDate() + daysUntilNextSunday);
+
+    // End date is start date + (weeks * 7 days - 1)
+    // Subtract 1 to include exactly the number of weeks specified
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + registrationWeekLimit * 7);
+    endDate.setDate(startDate.getDate() + registrationWeekLimit * 7 - 1);
 
     setDateRange({ start: startDate, end: endDate });
+
+    console.log(
+      `Date range: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
+    );
   };
 
   // Fetch registered shifts from API
@@ -62,7 +74,7 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://vietsac.id.vn/api/working-slot-registers?year=0&month=0&day=0&dayOfWeek=0&StaffId=${staffId}&IncludeProperties=WorkingSlot`
+        `https://vietsac.id.vn/api/working-slot-registers?StaffId=${staffId}&IncludeProperties=WorkingSlot`
       );
       const data = await response.json();
 
@@ -289,7 +301,8 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
               </Text>
             </View>
             <Text className="text-white mt-1 opacity-90">
-              Hiển thị lịch làm việc trong {registrationWeekLimit} tuần tới
+              Hiển thị lịch làm việc từ Chủ nhật tới ({registrationWeekLimit}{" "}
+              tuần)
             </Text>
             <Text className="text-white opacity-90">{formatDateRange()}</Text>
           </View>
@@ -305,8 +318,8 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
               <View className="flex-1 items-center justify-center">
                 <Calendar size={64} color="#D1D5DB" />
                 <Text className="mt-4 text-gray-500 text-lg text-center">
-                  Bạn chưa đăng ký ca làm việc nào trong {registrationWeekLimit}{" "}
-                  tuần tới
+                  Bạn chưa đăng ký ca làm việc nào từ Chủ nhật tới (
+                  {registrationWeekLimit} tuần)
                 </Text>
                 <TouchableOpacity
                   onPress={() => navigation.goBack()}

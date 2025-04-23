@@ -47,7 +47,6 @@ export default function HomeScreen({ navigation }) {
             scrollEventThrottle={16}
           >
             <HeaderHomePage headerHeight={headerHeight} />
-            <WorkProgress />
 
             {/* Check-in Button */}
             <View className="px-6">

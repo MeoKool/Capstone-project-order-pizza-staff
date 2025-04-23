@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -147,9 +149,14 @@ export default function WorkScheduleScreen({ navigation }) {
     const dates = [];
     const today = new Date();
 
-    // Add cutoff days to today to get the start date
+    // Find the next Monday (day 1)
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() + cutoffDay);
+    const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
+
+    // Calculate days until next Monday
+    // If today is Monday, we still want to show next Monday, so we add 7
+    const daysUntilNextMonday = dayOfWeek === 1 ? 7 : (8 - dayOfWeek) % 7;
+    startDate.setDate(today.getDate() + daysUntilNextMonday);
 
     // Calculate how many days to show (weekLimit * 7)
     const daysToShow = weekLimit * 7;
@@ -160,6 +167,12 @@ export default function WorkScheduleScreen({ navigation }) {
       date.setDate(startDate.getDate() + i);
       dates.push(date);
     }
+
+    console.log(
+      `Date range: ${startDate.toLocaleDateString()} - ${new Date(
+        new Date(startDate).setDate(startDate.getDate() + daysToShow - 1)
+      ).toLocaleDateString()}`
+    );
 
     setWeekDates(dates);
     setSelectedDate(dates[0]); // Select the first available date
@@ -505,8 +518,8 @@ export default function WorkScheduleScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
                 <Text className="text-white mt-1 opacity-90">
-                  Bạn có thể đăng ký lịch làm việc trước{" "}
-                  {configs.registrationWeekLimit} tuần
+                  Bạn có thể đăng ký lịch làm việc từ Thứ hai tới và trong{" "}
+                  {configs.registrationWeekLimit} tuần tiếp theo
                 </Text>
                 <Text className="text-white opacity-90">
                   Thời gian đăng ký trước {configs.registrationCutoffDay} ngày
