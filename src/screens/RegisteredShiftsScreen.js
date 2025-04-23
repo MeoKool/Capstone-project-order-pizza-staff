@@ -171,7 +171,7 @@ export default function RegisteredShiftsScreen({ navigation, route }) {
           color: "text-green-600",
           text: "Đã duyệt",
         };
-      case "Pending":
+      case "Onhold":
         return {
           icon: <AlertCircle size={20} color="#F59E0B" />,
           color: "text-yellow-600",
