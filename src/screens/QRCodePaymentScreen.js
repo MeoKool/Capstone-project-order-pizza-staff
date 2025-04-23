@@ -35,11 +35,12 @@ export default function QRCodePaymentScreen() {
   const { orderId, orderItems = [] } = route.params;
   const [paymentData, setPaymentData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState("qr"); // 'qr' or 'cash'
+  const [paymentMethod, setPaymentMethod] = useState(null); // Start with no method selected
   const [paymentStatus, setPaymentStatus] = useState("pending"); // 'pending', 'processing', 'completed'
   const [order, setOrder] = useState(null);
   const [cancellingPayment, setCancellingPayment] = useState(false);
   const [error, setError] = useState(null);
+  const [switchingMethod, setSwitchingMethod] = useState(false);
 
   // Use backend total if available, otherwise calculate from items
   const totalAmount = order?.totalPrice || calculateTotalAmount(orderItems);
@@ -56,30 +57,8 @@ export default function QRCodePaymentScreen() {
         );
         setOrder(orderResponse.data.result);
 
-        // Create payment QR code
-        try {
-          const qrResponse = await axios.post(
-            `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
-          );
-          setPaymentData(qrResponse.data.result);
-        } catch (qrError) {
-          console.error("QR code generation error:", qrError);
-
-          // Just pass the error directly from backend
-          if (qrError.response && qrError.response.data) {
-            setError(qrError.response.data.error.message);
-            Alert.alert(
-              "Lỗi",
-              qrError.response.data.error.message ||
-                "Không thể tạo mã QR thanh toán"
-            );
-          } else {
-            Alert.alert(
-              "Lỗi",
-              qrError.message || "Không thể tạo mã QR thanh toán"
-            );
-          }
-        }
+        // Don't automatically create QR code here anymore
+        setLoading(false);
       } catch (error) {
         console.error("Error initializing payment:", error);
 
@@ -93,13 +72,93 @@ export default function QRCodePaymentScreen() {
         } else {
           Alert.alert("Lỗi", error.message || "Không thể khởi tạo thanh toán");
         }
-      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
   }, [orderId]);
+
+  const cancelQRPayment = async () => {
+    try {
+      setSwitchingMethod(true);
+      setError(null);
+
+      const response = await axios.post(
+        `${API_URL}/api/payments/cancel-payment-qrcode/${orderId}`
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.message || "Không thể hủy thanh toán QR");
+      }
+
+      // Clear any existing QR data
+      setPaymentData(null);
+
+      return true;
+    } catch (error) {
+      console.error("Cancel QR payment error:", error);
+
+      // Just pass the error directly from backend
+      if (error.response && error.response.data) {
+        setError(error.response.data);
+        Alert.alert(
+          "Lỗi",
+          error.response.data.message || "Không thể hủy thanh toán QR"
+        );
+      } else {
+        Alert.alert("Lỗi", error.message || "Không thể hủy thanh toán QR");
+      }
+      return false;
+    } finally {
+      setSwitchingMethod(false);
+    }
+  };
+
+  const handlePaymentMethodSelect = async (method) => {
+    // If already on this method, do nothing
+    if (method === paymentMethod) return;
+
+    // If switching to cash and we have QR payment data, cancel it first
+    if (method === "cash" && paymentData) {
+      const cancelled = await cancelQRPayment();
+      if (!cancelled) return; // Don't proceed if cancellation failed
+    }
+
+    setPaymentMethod(method);
+
+    if (method === "qr") {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Create payment QR code
+        const qrResponse = await axios.post(
+          `${API_URL}/api/payments/create-payment-qrcode/${orderId}`
+        );
+        setPaymentData(qrResponse.data.result);
+      } catch (qrError) {
+        console.error("QR code generation error:", qrError);
+
+        // Just pass the error directly from backend
+        if (qrError.response && qrError.response.data) {
+          setError(qrError.response.data.error.message);
+          Alert.alert(
+            "Lỗi",
+            qrError.response.data.error.message ||
+              "Không thể tạo mã QR thanh toán"
+          );
+        } else {
+          Alert.alert(
+            "Lỗi",
+            qrError.message || "Không thể tạo mã QR thanh toán"
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const handleCashPayment = async () => {
     try {
@@ -237,7 +296,8 @@ export default function QRCodePaymentScreen() {
             {/* Payment Method Selector */}
             <View className="flex-row bg-white/20 rounded-xl p-1 mb-6 w-full max-w-xs">
               <TouchableOpacity
-                onPress={() => setPaymentMethod("qr")}
+                onPress={() => handlePaymentMethodSelect("qr")}
+                disabled={loading || switchingMethod}
                 className={`flex-1 py-3 rounded-lg flex-row justify-center items-center ${
                   paymentMethod === "qr" ? "bg-white" : ""
                 }`}
@@ -256,7 +316,8 @@ export default function QRCodePaymentScreen() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setPaymentMethod("cash")}
+                onPress={() => handlePaymentMethodSelect("cash")}
+                disabled={loading || switchingMethod}
                 className={`flex-1 py-3 rounded-lg flex-row justify-center items-center ${
                   paymentMethod === "cash" ? "bg-white" : ""
                 }`}
@@ -286,8 +347,27 @@ export default function QRCodePaymentScreen() {
               </Text>
             </View>
 
+            {/* Loading indicator when switching payment methods */}
+            {switchingMethod && (
+              <View className="items-center mb-6">
+                <ActivityIndicator size="large" color="white" />
+                <Text className="text-white mt-2">
+                  Đang chuyển phương thức thanh toán...
+                </Text>
+              </View>
+            )}
+
+            {/* Prompt to select payment method if none selected */}
+            {!paymentMethod && !loading && !switchingMethod && (
+              <View className="items-center mb-6">
+                <Text className="text-white text-xl text-center">
+                  Vui lòng chọn phương thức thanh toán ở trên
+                </Text>
+              </View>
+            )}
+
             {/* QR Code Payment */}
-            {paymentMethod === "qr" && (
+            {paymentMethod === "qr" && !switchingMethod && (
               <View className="items-center">
                 <Text className="text-white text-xl mb-4">
                   Quét mã QR để thanh toán
@@ -305,6 +385,13 @@ export default function QRCodePaymentScreen() {
                       <Text className="text-red-500 text-center mt-4 font-medium">
                         {error.message || "Không thể tạo mã QR"}
                       </Text>
+                      <TouchableOpacity
+                        onPress={refreshQRCode}
+                        className="mt-4 bg-[#f26b0f] py-2 px-4 rounded-lg flex-row items-center"
+                      >
+                        <RefreshCw size={16} color="white" className="mr-2" />
+                        <Text className="text-white font-medium">Thử lại</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : !paymentData ? (
                     <View className="h-250 w-250 items-center justify-center">
@@ -312,6 +399,13 @@ export default function QRCodePaymentScreen() {
                       <Text className="text-red-500 text-center mt-4 font-medium">
                         Không thể tạo mã QR
                       </Text>
+                      <TouchableOpacity
+                        onPress={refreshQRCode}
+                        className="mt-4 bg-[#f26b0f] py-2 px-4 rounded-lg flex-row items-center"
+                      >
+                        <RefreshCw size={16} color="white" className="mr-2" />
+                        <Text className="text-white font-medium">Thử lại</Text>
+                      </TouchableOpacity>
                     </View>
                   ) : (
                     <>
@@ -323,7 +417,7 @@ export default function QRCodePaymentScreen() {
             )}
 
             {/* Cash Payment */}
-            {paymentMethod === "cash" && (
+            {paymentMethod === "cash" && !switchingMethod && (
               <View className="items-center w-full">
                 <View className="bg-white/20 rounded-xl p-6 mb-6 w-full">
                   <Text className="text-white text-center text-lg mb-4">
@@ -371,27 +465,29 @@ export default function QRCodePaymentScreen() {
             )}
 
             {/* Cancel Payment Button */}
-            {paymentStatus !== "completed" && (
-              <TouchableOpacity
-                onPress={handleCancelPayment}
-                disabled={cancellingPayment}
-                className="bg-red-500 py-3 px-6 rounded-xl mt-6 flex-row items-center"
-                activeOpacity={0.7}
-              >
-                {cancellingPayment ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="white"
-                    className="mr-2"
-                  />
-                ) : (
-                  <X size={20} color="white" className="mr-2" />
-                )}
-                <Text className="text-white font-bold">
-                  {cancellingPayment ? "Đang hủy..." : "Hủy thanh toán"}
-                </Text>
-              </TouchableOpacity>
-            )}
+            {paymentStatus !== "completed" &&
+              paymentMethod &&
+              !switchingMethod && (
+                <TouchableOpacity
+                  onPress={handleCancelPayment}
+                  disabled={cancellingPayment || switchingMethod}
+                  className="bg-red-500 py-3 px-6 rounded-xl mt-6 flex-row items-center"
+                  activeOpacity={0.7}
+                >
+                  {cancellingPayment ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="white"
+                      className="mr-2"
+                    />
+                  ) : (
+                    <X size={20} color="white" className="mr-2" />
+                  )}
+                  <Text className="text-white font-bold">
+                    {cancellingPayment ? "Đang hủy..." : "Hủy thanh toán"}
+                  </Text>
+                </TouchableOpacity>
+              )}
           </View>
         </ScrollView>
       </SafeAreaView>
