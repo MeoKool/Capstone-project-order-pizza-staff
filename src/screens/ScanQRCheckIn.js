@@ -347,6 +347,79 @@ export default function QRCheckInScreen({ navigation }) {
           </View>
         </SafeAreaView>
 
+        {/* No Zones Modal */}
+        <Modal
+          visible={showNoZonesModal}
+          transparent={true}
+          animationType="fade"
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(0,0,0,0.5)",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 24,
+                width: "80%",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#FEE2E2",
+                  padding: 12,
+                  borderRadius: 50,
+                  marginBottom: 16,
+                }}
+              >
+                <AlertTriangle size={32} color="#EF4444" />
+              </View>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 8,
+                  textAlign: "center",
+                }}
+              >
+                Không có quyền truy cập
+              </Text>
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginBottom: 20,
+                  color: "#555",
+                }}
+              >
+                Bạn chưa được phân công khu vực nào. Vui lòng liên hệ quản lý để
+                được phân công khu vực.
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowNoZonesModal(false);
+                  if (navigation) navigation.goBack();
+                }}
+                style={{
+                  backgroundColor: "#EF4444",
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: "white", fontWeight: "500" }}>
+                  Quay lại
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* Loading Overlay */}
         {loading && (
           <View
@@ -369,9 +442,8 @@ export default function QRCheckInScreen({ navigation }) {
                 alignItems: "center",
               }}
             >
-              <Text
-                style={{ color: "#555", marginBottom: 8, fontWeight: "500" }}
-              >
+              <ActivityIndicator size="large" color={GRADIENT_COLORS[0]} />
+              <Text style={{ color: "#555", marginTop: 12, fontWeight: "500" }}>
                 Đang xử lý...
               </Text>
             </View>
