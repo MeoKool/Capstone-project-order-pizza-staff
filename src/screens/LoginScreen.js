@@ -11,12 +11,15 @@ import {
   Keyboard,
   StatusBar,
   Alert,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Lock, User, Eye, EyeOff } from "lucide-react-native";
+import { Lock, User, Eye, EyeOff, Pizza } from "lucide-react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+
+const { width } = Dimensions.get("window");
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
@@ -29,7 +32,7 @@ export default function LoginScreen({ navigation }) {
     const trimmedPassword = password.trim();
 
     if (!trimmedUsername || !trimmedPassword) {
-      Alert.alert("Notification", "Please enter your username and password");
+      Alert.alert("Thông báo", "Vui lòng điền tên đăng nhập và mật khẩu");
       return;
     }
 
@@ -77,15 +80,15 @@ export default function LoginScreen({ navigation }) {
           console.log("Staff info saved:", staff);
         }
 
-        navigation.replace("MainTabs"); // Thử thay bằng navigation.navigate("MainTabs")
+        navigation.replace("MainTabs");
       } else {
-        Alert.alert("Notification", "Login information is incorrect");
+        Alert.alert("Thông báo", "Login information is incorrect");
       }
     } catch (error) {
-      console.error("Login error:", error.response?.data || error.message);
       Alert.alert(
         "Thông báo",
-        "Please check your login information and try again."
+        error.response?.data?.error?.message ||
+          "Please check your login information and try again."
       );
     } finally {
       setLoading(false);
@@ -110,21 +113,28 @@ export default function LoginScreen({ navigation }) {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ flex: 1 }}
           >
-            <View className="flex-1 px-8 pt-12 justify-center">
-              <View className="mb-12">
-                <Text className="text-white text-5xl font-bold mb-2">
+            <View className="flex-1 px-8 justify-center">
+              {/* Logo or Brand Image */}
+              <View className="items-center mb-8">
+                <View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4">
+                  <Pizza size={48} color="#fff" />
+                </View>
+              </View>
+
+              <View className="mb-8">
+                <Text className="text-white text-4xl font-bold text-center mb-2">
                   Chào mừng
                 </Text>
-                <Text className="text-white text-xl opacity-80">
+                <Text className="text-white text-lg opacity-90 text-center">
                   Đăng nhập tài khoản của bạn!
                 </Text>
               </View>
 
-              <View className="space-y-6">
-                <View className="bg-white/20 rounded-2xl p-1">
-                  <View className="flex-row items-center bg-white rounded-xl">
-                    <View className="p-4">
-                      <User size={24} color="#ff7e5f" />
+              <View className="space-y-5">
+                <View className="bg-white/20 backdrop-blur-md rounded-2xl p-1.5 shadow-lg">
+                  <View className="flex-row items-center bg-white/95 rounded-xl overflow-hidden">
+                    <View className="p-4 bg-[#ff7e5f]/10">
+                      <User size={22} color="#ff7e5f" />
                     </View>
                     <TextInput
                       className="flex-1 p-4 text-base text-gray-800"
@@ -137,10 +147,10 @@ export default function LoginScreen({ navigation }) {
                   </View>
                 </View>
 
-                <View className="bg-white/20 rounded-2xl p-1">
-                  <View className="flex-row items-center bg-white rounded-xl">
-                    <View className="p-4">
-                      <Lock size={24} color="#ff7e5f" />
+                <View className="bg-white/20 backdrop-blur-md rounded-2xl p-1.5 shadow-lg">
+                  <View className="flex-row items-center bg-white/95 rounded-xl overflow-hidden">
+                    <View className="p-4 bg-[#ff7e5f]/10">
+                      <Lock size={22} color="#ff7e5f" />
                     </View>
                     <TextInput
                       className="flex-1 p-4 text-base text-gray-800 pr-12"
@@ -153,11 +163,12 @@ export default function LoginScreen({ navigation }) {
                     <TouchableOpacity
                       className="absolute right-0 h-full justify-center pr-4"
                       onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                       {showPassword ? (
-                        <EyeOff size={24} color="#ff7e5f" />
+                        <EyeOff size={22} color="#ff7e5f" />
                       ) : (
-                        <Eye size={24} color="#ff7e5f" />
+                        <Eye size={22} color="#ff7e5f" />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -165,36 +176,39 @@ export default function LoginScreen({ navigation }) {
               </View>
 
               <TouchableOpacity
-                className="mt-4 self-end"
-                onPress={() => navigation.navigate("ChangePassword")}
-              >
-                <Text className="text-white text-base font-medium">
-                  Quên mật khẩu?
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className={`${
-                  loading ? "bg-gray-300" : "bg-white"
-                } rounded-xl mt-8 p-4 shadow-lg`}
+                className="mt-10 rounded-xl overflow-hidden shadow-xl"
                 onPress={handleLogin}
                 disabled={loading}
                 style={{
-                  elevation: 5,
+                  elevation: 8,
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
                 }}
               >
-                <Text
-                  className={`${
-                    loading ? "text-gray-500" : "text-[#ff7e5f]"
-                  } text-center font-bold text-lg`}
+                <LinearGradient
+                  colors={loading ? ["#ccc", "#aaa"] : ["#3a7bd5", "#00d2ff"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    paddingVertical: 16,
+                  }}
                 >
-                  {loading ? "ĐANG XỬ LÝ..." : "ĐĂNG NHẬP"}
-                </Text>
+                  <Text
+                    className={`${
+                      loading ? "text-gray-600" : "text-white"
+                    } text-center font-bold text-lg`}
+                  >
+                    {loading ? "ĐANG XỬ LÝ..." : "ĐĂNG NHẬP"}
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
+
+              {/* Decorative elements */}
+              <View className="absolute top-10 left-5 w-20 h-20 bg-white/10 rounded-full" />
+              <View className="absolute bottom-10 right-5 w-32 h-32 bg-white/10 rounded-full" />
+              <View className="absolute top-1/4 right-8 w-16 h-16 bg-white/10 rounded-full" />
             </View>
           </KeyboardAvoidingView>
         </SafeAreaView>
