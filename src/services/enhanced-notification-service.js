@@ -9,10 +9,13 @@ class EnhancedNotificationService {
     this.unsubscribeZoneUpdate = null;
     this.authCheckInterval = null;
     this.notificationHistory = [];
+    // Add a flag to track if event handlers are already registered
+    this.handlersRegistered = false;
   }
 
   async initialize() {
     if (this.isInitialized) {
+      console.log("NotificationService: Already initialized, skipping");
       return;
     }
 
@@ -27,17 +30,26 @@ class EnhancedNotificationService {
       // Connect to SignalR hub
       await signalRService.start();
 
-      // Subscribe to notification events
-      this.unsubscribe = signalRService.on(
-        "ReceiveNotification",
-        this.handleNotification.bind(this)
-      );
+      // Only register handlers if not already registered
+      if (!this.handlersRegistered) {
+        // Unsubscribe from any existing handlers first to prevent duplicates
+        this.unregisterHandlers();
 
-      // Subscribe to staff zone update events
-      this.unsubscribeZoneUpdate = signalRService.on(
-        "UpdatedStaffZoneAsync",
-        this.handleStaffZoneUpdate.bind(this)
-      );
+        // Subscribe to notification events
+        this.unsubscribe = signalRService.on(
+          "ReceiveNotification",
+          this.handleNotification.bind(this)
+        );
+
+        // Subscribe to staff zone update events
+        this.unsubscribeZoneUpdate = signalRService.on(
+          "UpdatedStaffZoneAsync",
+          this.handleStaffZoneUpdate.bind(this)
+        );
+
+        this.handlersRegistered = true;
+        console.log("NotificationService: Event handlers registered");
+      }
 
       this.isInitialized = true;
 
@@ -48,6 +60,22 @@ class EnhancedNotificationService {
       // Try to reconnect after a delay
       setTimeout(() => this.initialize(), 5000);
     }
+  }
+
+  // Helper method to unregister existing handlers
+  unregisterHandlers() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+
+    if (this.unsubscribeZoneUpdate) {
+      this.unsubscribeZoneUpdate();
+      this.unsubscribeZoneUpdate = null;
+    }
+
+    this.handlersRegistered = false;
+    console.log("NotificationService: Event handlers unregistered");
   }
 
   setupAuthListener() {
@@ -70,6 +98,9 @@ class EnhancedNotificationService {
           await signalRService.reconnect();
 
           if (!this.isInitialized) {
+            // Unregister any existing handlers first
+            this.unregisterHandlers();
+
             // Subscribe to notification events if not already initialized
             this.unsubscribe = signalRService.on(
               "ReceiveNotification",
@@ -82,7 +113,9 @@ class EnhancedNotificationService {
               this.handleStaffZoneUpdate.bind(this)
             );
 
+            this.handlersRegistered = true;
             this.isInitialized = true;
+            console.log("NotificationService: Initialized after token change");
           }
         }
 
@@ -118,6 +151,8 @@ class EnhancedNotificationService {
   }
 
   handleNotification(notification) {
+    console.log("NotificationService: Received notification", notification);
+
     const title = notification.title || "Thông báo";
     const message = notification.message || "";
     const type = this.getNotificationType(notification);
@@ -180,15 +215,7 @@ class EnhancedNotificationService {
   }
 
   shutdown() {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
-    }
-
-    if (this.unsubscribeZoneUpdate) {
-      this.unsubscribeZoneUpdate();
-      this.unsubscribeZoneUpdate = null;
-    }
+    this.unregisterHandlers();
 
     if (this.authCheckInterval) {
       clearInterval(this.authCheckInterval);
