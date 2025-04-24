@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { MapPin, Navigation } from "lucide-react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TodaySchedule = () => {
@@ -12,38 +12,50 @@ const TodaySchedule = () => {
   const [error, setError] = useState(null);
   const [zoneData, setZoneData] = useState(null);
 
-  useEffect(() => {
-    const fetchZoneData = async () => {
-      try {
-        // Get staffId from AsyncStorage
-        const staffId = await AsyncStorage.getItem("staffId");
+  // Use useFocusEffect instead of useEffect to run when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // This function will run when the screen comes into focus
+      const fetchZoneData = async () => {
+        setLoading(true);
+        setError(null);
 
-        if (!staffId) {
-          throw new Error("Staff ID not found in storage");
+        try {
+          // Get staffId from AsyncStorage
+          const staffId = await AsyncStorage.getItem("staffId");
+
+          if (!staffId) {
+            throw new Error("Staff ID not found in storage");
+          }
+
+          // Fetch data from API
+          const response = await fetch(
+            `https://vietsac.id.vn/api/staff-zones?StaffId=${staffId}&IncludeProperties=Zone`
+          );
+
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.message || "Failed to fetch zone data");
+          }
+
+          setZoneData(data.result.items[0]);
+          setLoading(false);
+        } catch (err) {
+          console.error("Error fetching zone data:", err);
+          setError(err.message);
+          setLoading(false);
         }
+      };
 
-        // Fetch data from API
-        const response = await fetch(
-          `https://vietsac.id.vn/api/staff-zones?StaffId=${staffId}&IncludeProperties=Zone`
-        );
+      fetchZoneData();
 
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.message || "Failed to fetch zone data");
-        }
-
-        setZoneData(data.result.items[0]);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching zone data:", err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchZoneData();
-  }, []);
+      // Optional: Return a cleanup function
+      return () => {
+        // Any cleanup code if needed
+      };
+    }, []) // Empty dependency array means this effect runs on every focus
+  );
 
   if (loading) {
     return (
