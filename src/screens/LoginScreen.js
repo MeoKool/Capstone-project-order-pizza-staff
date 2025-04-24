@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   StatusBar,
   Alert,
   Dimensions,
+  Animated,
+  Easing,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Lock, User, Eye, EyeOff, Pizza } from "lucide-react-native";
@@ -26,6 +28,27 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Create a new Animated.Value for rotation
+  const rotateAnim = new Animated.Value(0);
+
+  // Set up the rotation animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 3000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  // Create the rotation interpolation
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
 
   const handleLogin = async () => {
     const trimmedUsername = username.trim();
@@ -114,10 +137,12 @@ export default function LoginScreen({ navigation }) {
             style={{ flex: 1 }}
           >
             <View className="flex-1 px-8 justify-center">
-              {/* Logo or Brand Image */}
+              {/* Logo or Brand Image with rotation */}
               <View className="items-center mb-8">
                 <View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4">
-                  <Pizza size={48} color="#fff" />
+                  <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                    <Pizza size={48} color="#fff" />
+                  </Animated.View>
                 </View>
               </View>
 
