@@ -1,12 +1,25 @@
-import { View, Text, TouchableOpacity, Alert, Dimensions } from "react-native";
+"use client";
+
+import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { Trash2 } from "lucide-react-native";
 import axios from "axios";
+import { useState } from "react";
+import ErrorModal from "../ErrorModal";
 
 const API_URL = "https://vietsac.id.vn/";
 const { width } = Dimensions.get("window");
 
 export default function OrderItem({ item, onRefresh }) {
+  // State for confirmation modal
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+
+  // State for result modal (success/error)
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultModalTitle, setResultModalTitle] = useState("");
+  const [resultModalMessage, setResultModalMessage] = useState("");
+  const [resultModalIsSuccess, setResultModalIsSuccess] = useState(false);
+
   const getStatusColor = (status) => {
     switch (status) {
       case "Done":
@@ -31,26 +44,47 @@ export default function OrderItem({ item, onRefresh }) {
 
   const handleCancelItem = async () => {
     try {
-      Alert.alert("Xác nhận", `Bạn có chắc muốn hủy "${item.name}"?`, [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xác nhận",
-          onPress: async () => {
-            const response = await axios.put(
-              `${API_URL}/api/order-items/cancelled/${item.id}`
-            );
-
-            if (response.data.success) {
-              Alert.alert("Thành công", "Đã hủy món thành công");
-              if (onRefresh) onRefresh();
-            } else {
-              throw new Error(response.data.message || "Hủy món thất bại");
-            }
-          },
-        },
-      ]);
+      // Show confirmation modal
+      setConfirmModalVisible(true);
     } catch (err) {
-      Alert.alert("Lỗi", err.message || "Không thể hủy món. Vui lòng thử lại.");
+      // Show error modal
+      setResultModalTitle("Lỗi");
+      setResultModalMessage(
+        err.message || "Không thể hủy món. Vui lòng thử lại."
+      );
+      setResultModalIsSuccess(false);
+      setResultModalVisible(true);
+    }
+  };
+
+  const confirmCancelItem = async () => {
+    try {
+      setConfirmModalVisible(false);
+
+      const response = await axios.put(
+        `${API_URL}/api/order-items/cancelled/${item.id}`
+      );
+
+      if (response.data.success) {
+        // Show success modal
+        setResultModalTitle("Thành công");
+        setResultModalMessage("Đã hủy món thành công");
+        setResultModalIsSuccess(true);
+        setResultModalVisible(true);
+
+        // Refresh the list after closing the modal
+        if (onRefresh) onRefresh();
+      } else {
+        throw new Error(response.data.message || "Hủy món thất bại");
+      }
+    } catch (err) {
+      // Show error modal
+      setResultModalTitle("Lỗi");
+      setResultModalMessage(
+        err.message || "Không thể hủy món. Vui lòng thử lại."
+      );
+      setResultModalIsSuccess(false);
+      setResultModalVisible(true);
     }
   };
 
@@ -134,15 +168,39 @@ export default function OrderItem({ item, onRefresh }) {
   }
 
   return (
-    <Swipeable
-      renderRightActions={renderRightActions}
-      friction={2}
-      overshootRight={false}
-      containerStyle={{ marginBottom: 12 }}
-    >
-      <View className="bg-white rounded-l-lg p-4 shadow-md relative">
-        {renderItemContent()}
-      </View>
-    </Swipeable>
+    <>
+      <Swipeable
+        renderRightActions={renderRightActions}
+        friction={2}
+        overshootRight={false}
+        containerStyle={{ marginBottom: 12 }}
+      >
+        <View className="bg-white rounded-l-lg p-4 shadow-md relative">
+          {renderItemContent()}
+        </View>
+      </Swipeable>
+
+      {/* Confirmation Modal */}
+      <ErrorModal
+        visible={confirmModalVisible}
+        title="Xác nhận"
+        message={`Bạn có chắc muốn hủy "${item.name}"?`}
+        buttonText="Xác nhận"
+        cancelText="Hủy"
+        isWarning={true}
+        onClose={confirmCancelItem}
+        onCancel={() => setConfirmModalVisible(false)}
+      />
+
+      {/* Result Modal (Success/Error) */}
+      <ErrorModal
+        visible={resultModalVisible}
+        title={resultModalTitle}
+        message={resultModalMessage}
+        buttonText="OK"
+        isSuccess={resultModalIsSuccess}
+        onClose={() => setResultModalVisible(false)}
+      />
+    </>
   );
 }
