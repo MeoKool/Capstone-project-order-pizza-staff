@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   View,
@@ -10,7 +12,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   StatusBar,
-  Alert,
   Dimensions,
   Animated,
   Easing,
@@ -20,6 +21,7 @@ import { Lock, User, Eye, EyeOff, Pizza } from "lucide-react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+import ErrorModal from "../components/ErrorModal";
 
 const { width } = Dimensions.get("window");
 
@@ -28,6 +30,12 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
 
   // Create a new Animated.Value for rotation
   const rotateAnim = new Animated.Value(0);
@@ -50,12 +58,20 @@ export default function LoginScreen({ navigation }) {
     outputRange: ["0deg", "360deg"],
   });
 
+  // Helper function to show error modal
+  const showErrorModal = (title, message, isSuccess = false) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalVisible(true);
+  };
+
   const handleLogin = async () => {
     const trimmedUsername = username.trim();
     const trimmedPassword = password.trim();
 
     if (!trimmedUsername || !trimmedPassword) {
-      Alert.alert("Thông báo", "Vui lòng điền tên đăng nhập và mật khẩu");
+      showErrorModal("Thông báo", "Vui lòng điền tên đăng nhập và mật khẩu");
       return;
     }
 
@@ -105,10 +121,10 @@ export default function LoginScreen({ navigation }) {
 
         navigation.replace("MainTabs");
       } else {
-        Alert.alert("Thông báo", "Login information is incorrect");
+        showErrorModal("Thông báo", "Login information is incorrect");
       }
     } catch (error) {
-      Alert.alert(
+      showErrorModal(
         "Thông báo",
         error.response?.data?.error?.message ||
           "Please check your login information and try again."
@@ -237,6 +253,16 @@ export default function LoginScreen({ navigation }) {
             </View>
           </KeyboardAvoidingView>
         </SafeAreaView>
+
+        {/* Error Modal */}
+        <ErrorModal
+          visible={errorModalVisible}
+          title={errorModalTitle}
+          message={errorModalMessage}
+          buttonText="OK"
+          isSuccess={errorModalIsSuccess}
+          onClose={() => setErrorModalVisible(false)}
+        />
       </LinearGradient>
     </TouchableWithoutFeedback>
   );
