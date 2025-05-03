@@ -40,7 +40,7 @@ import {
   approveSwapRequest,
   rejectSwapRequest,
 } from "../components/SwapSchedule/apiService";
-import ErrorModal from "../components/ErrorModal";
+import ConfirmationModal from "../components/RegisterWork/ConfirmationModal";
 
 export default function ShiftSwapScreen({ navigation }) {
   // State for shifts and UI
@@ -80,31 +80,53 @@ export default function ShiftSwapScreen({ navigation }) {
   // Add state for request actions
   const [processingRequestIds, setProcessingRequestIds] = useState({});
 
-  // Error modal states
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorModalTitle, setErrorModalTitle] = useState("");
-  const [errorModalMessage, setErrorModalMessage] = useState("");
-  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
-  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+  // Confirmation modal states
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmModalData, setConfirmModalData] = useState({
+    title: "",
+    message: "",
+  });
 
-  // Helper function to show error modal
-  const showErrorModal = (
+  // Helper function to show confirmation modal
+  const showConfirmModal = (
     title,
     message,
     isSuccess = false,
     callback = () => {}
   ) => {
-    setErrorModalTitle(title);
-    setErrorModalMessage(message);
-    setErrorModalIsSuccess(isSuccess);
+    setConfirmModalData({
+      title: title,
+      message: message,
+    });
+    setConfirmModalVisible(true);
     setErrorModalCallback(() => callback);
-    setErrorModalVisible(true);
   };
 
-  // Helper function to close error modal and execute callback
-  const closeErrorModal = () => {
-    setErrorModalVisible(false);
-    errorModalCallback();
+  // State for modal callback
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+
+  // Helper function to handle confirmation modal actions
+  const handleConfirmModalConfirm = () => {
+    setConfirmModalVisible(false);
+
+    // If this is the full-time employee notification, navigate back
+    if (
+      confirmModalData.title === "Thông báo" &&
+      confirmModalData.message ===
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+    ) {
+      navigation.goBack();
+      return;
+    }
+
+    // For other confirmations, execute the callback if it exists
+    if (errorModalCallback) {
+      errorModalCallback();
+    }
+  };
+
+  const handleConfirmModalCancel = () => {
+    setConfirmModalVisible(false);
   };
 
   // Load staff ID and configurations on component mount
@@ -120,10 +142,11 @@ export default function ShiftSwapScreen({ navigation }) {
         setStaffStatus(status);
         // Check if staff is full-time and show message
         if (status === "FullTime") {
-          showErrorModal(
-            "Thông báo",
-            "Nhân viên toàn thời gian không được đổi ca làm việc"
-          );
+          setConfirmModalData({
+            title: "Thông báo",
+            message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+          });
+          setConfirmModalVisible(true);
         }
       }
     };
@@ -177,21 +200,24 @@ export default function ShiftSwapScreen({ navigation }) {
       await approveSwapRequest(requestId);
 
       // Show success message
-      showErrorModal(
-        "Thành công",
-        "Yêu cầu đổi ca đã được chấp nhận",
-        true,
-        () => {
-          // Reload swap requests
-          loadSwapRequests(staffId);
-        }
-      );
+      setConfirmModalData({
+        title: "Thành công",
+        message: "Yêu cầu đổi ca đã được chấp nhận",
+      });
+      setConfirmModalVisible(true);
+      setErrorModalCallback(() => {
+        // Reload swap requests
+        loadSwapRequests(staffId);
+      });
     } catch (error) {
       console.error("Error approving swap request:", error);
-      showErrorModal(
-        "Lỗi",
-        error.message || "Không thể chấp nhận yêu cầu đổi ca. Vui lòng thử lại."
-      );
+      setConfirmModalData({
+        title: "Lỗi",
+        message:
+          error.message ||
+          "Không thể chấp nhận yêu cầu đổi ca. Vui lòng thử lại.",
+      });
+      setConfirmModalVisible(true);
     } finally {
       // Clear processing state
       setProcessingRequestIds((prev) => {
@@ -215,16 +241,24 @@ export default function ShiftSwapScreen({ navigation }) {
       await rejectSwapRequest(requestId);
 
       // Show success message
-      showErrorModal("Thành công", "Yêu cầu đổi ca đã bị từ chối", true, () => {
+      setConfirmModalData({
+        title: "Thành công",
+        message: "Yêu cầu đổi ca đã bị từ chối",
+      });
+      setConfirmModalVisible(true);
+      setErrorModalCallback(() => {
         // Reload swap requests
         loadSwapRequests(staffId);
       });
     } catch (error) {
       console.error("Error rejecting swap request:", error);
-      showErrorModal(
-        "Lỗi",
-        error.message || "Không thể từ chối yêu cầu đổi ca. Vui lòng thử lại."
-      );
+      setConfirmModalData({
+        title: "Lỗi",
+        message:
+          error.message ||
+          "Không thể từ chối yêu cầu đổi ca. Vui lòng thử lại.",
+      });
+      setConfirmModalVisible(true);
     } finally {
       // Clear processing state
       setProcessingRequestIds((prev) => {
@@ -329,10 +363,11 @@ export default function ShiftSwapScreen({ navigation }) {
   const handleSourceDateSelect = async (date) => {
     // Check if staff is full-time
     if (staffStatus === "FullTime") {
-      showErrorModal(
-        "Thông báo",
-        "Nhân viên toàn thời gian không được đổi ca làm việc"
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -372,11 +407,19 @@ export default function ShiftSwapScreen({ navigation }) {
       if (myShiftsForDate.length > 0) {
         setStep(2);
       } else {
-        showErrorModal("Thông báo", "Bạn không có ca làm nào vào ngày này");
+        setConfirmModalData({
+          title: "Thông báo",
+          message: "Bạn không có ca làm nào vào ngày này",
+        });
+        setConfirmModalVisible(true);
       }
     } catch (error) {
       console.error("Error loading shifts:", error);
-      showErrorModal("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
+      setConfirmModalData({
+        title: "Lỗi",
+        message: "Không thể tải ca làm việc cho ngày đã chọn",
+      });
+      setConfirmModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -386,10 +429,11 @@ export default function ShiftSwapScreen({ navigation }) {
   const handleSourceShiftSelect = (shift) => {
     // Check if staff is full-time
     if (staffStatus === "FullTime") {
-      showErrorModal(
-        "Thông báo",
-        "Nhân viên toàn th���i gian không được đổi ca làm việc"
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -401,10 +445,11 @@ export default function ShiftSwapScreen({ navigation }) {
   const handleTargetDateSelect = async (date) => {
     // Check if staff is full-time
     if (staffStatus === "FullTime") {
-      showErrorModal(
-        "Thông báo",
-        "Nhân viên toàn thời gian không được đổi ca làm việc"
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -423,14 +468,19 @@ export default function ShiftSwapScreen({ navigation }) {
       if (otherShifts.length > 0) {
         setStep(4);
       } else {
-        showErrorModal(
-          "Thông báo",
-          "Không có ca làm nào khả dụng vào ngày này"
-        );
+        setConfirmModalData({
+          title: "Thông báo",
+          message: "Không có ca làm nào khả dụng vào ngày này",
+        });
+        setConfirmModalVisible(true);
       }
     } catch (error) {
       console.error("Error loading shifts:", error);
-      showErrorModal("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
+      setConfirmModalData({
+        title: "Lỗi",
+        message: "Không thể tải ca làm việc cho ngày đã chọn",
+      });
+      setConfirmModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -440,10 +490,11 @@ export default function ShiftSwapScreen({ navigation }) {
   const handleTargetShiftSelect = (shift) => {
     // Check if staff is full-time
     if (staffStatus === "FullTime") {
-      showErrorModal(
-        "Thông báo",
-        "Nhân viên toàn thời gian không được đổi ca làm việc"
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -455,10 +506,11 @@ export default function ShiftSwapScreen({ navigation }) {
   const handleSubmitSwap = async () => {
     // Check if staff is full-time
     if (staffStatus === "FullTime") {
-      showErrorModal(
-        "Thông báo",
-        "Nhân viên toàn thời gian không được đổi ca làm việc"
-      );
+      setConfirmModalData({
+        title: "Thông báo",
+        message: "Nhân viên toàn thời gian không được đổi ca làm việc",
+      });
+      setConfirmModalVisible(true);
       return;
     }
 
@@ -477,27 +529,29 @@ export default function ShiftSwapScreen({ navigation }) {
 
       await submitShiftSwap(swapData);
 
-      showErrorModal(
-        "Thành công",
-        "Yêu cầu đổi ca đã được gửi thành công",
-        true,
-        () => {
-          setIsModalVisible(false);
-          resetFlow();
-          loadMyShifts();
-          loadSwapRequests(staffId);
-        }
-      );
+      setConfirmModalData({
+        title: "Thành công",
+        message: "Yêu cầu đổi ca đã được gửi thành công",
+      });
+      setConfirmModalVisible(true);
+      setErrorModalCallback(() => {
+        setIsModalVisible(false);
+        resetFlow();
+        loadMyShifts();
+        loadSwapRequests(staffId);
+      });
     } catch (error) {
       console.error("Error submitting shift swap:", error);
       setError(
         error.message ||
           "Failed to submit shift swap request. Please try again."
       );
-      showErrorModal(
-        "Lỗi",
-        error.message || "Không thể gửi yêu cầu đổi ca. Vui lòng thử lại."
-      );
+      setConfirmModalData({
+        title: "Lỗi",
+        message:
+          error.message || "Không thể gửi yêu cầu đổi ca. Vui lòng thử lại.",
+      });
+      setConfirmModalVisible(true);
     } finally {
       setSubmitting(false);
     }
@@ -830,16 +884,6 @@ export default function ShiftSwapScreen({ navigation }) {
       case 1:
         return (
           <ScrollView className="px-4">
-            {/* Full-time employee warning */}
-            {staffStatus === "FullTime" && (
-              <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200 flex-row items-start">
-                <AlertTriangle size={20} color="#FF9800" className="mr-2" />
-                <Text className="text-orange-600 flex-1">
-                  Nhân viên toàn thời gian không được đổi ca làm việc
-                </Text>
-              </View>
-            )}
-
             <Text className="text-white text-base mb-2">
               Chọn ngày có ca làm của bạn:
             </Text>
@@ -1228,14 +1272,12 @@ export default function ShiftSwapScreen({ navigation }) {
           {/* Confirmation Modal */}
           {renderConfirmationModal()}
 
-          {/* Error Modal */}
-          <ErrorModal
-            visible={errorModalVisible}
-            title={errorModalTitle}
-            message={errorModalMessage}
-            buttonText="Đóng"
-            isSuccess={errorModalIsSuccess}
-            onClose={closeErrorModal}
+          {/* Confirmation Modal for alerts */}
+          <ConfirmationModal
+            visible={confirmModalVisible}
+            title={confirmModalData.title}
+            message={confirmModalData.message}
+            onConfirm={handleConfirmModalConfirm}
           />
         </SafeAreaView>
       </LinearGradient>

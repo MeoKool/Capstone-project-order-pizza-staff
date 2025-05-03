@@ -10,7 +10,7 @@ import {
 import { X, Calendar, Clock, MapPin, AlertTriangle } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchAvailableShifts, submitShiftSwap } from "./apiService";
-import ErrorModal from "../components/QRCheckin/ErrorModal";
+import ErrorModal from "../ErrorModal";
 
 export default function ShiftSwapModal({
   isVisible,
@@ -318,7 +318,7 @@ export default function ShiftSwapModal({
         visible={errorModalVisible}
         title={errorModalTitle}
         message={errorModalMessage}
-        buttonText="OK"
+        buttonText="Đóng"
         isSuccess={errorModalIsSuccess}
         onClose={closeErrorModal}
       />
