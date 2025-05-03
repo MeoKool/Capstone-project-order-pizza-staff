@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
-  Alert,
   StatusBar,
   SafeAreaView,
   TouchableOpacity,
@@ -22,7 +21,7 @@ import CameraScanner from "../components/QRCheckin/CameraScanner";
 import GuestInfoCard from "../components/QRCheckin/GuestInfoCard";
 import TableSelector from "../components/QRCheckin/TableSelector";
 import axios from "axios";
-
+import ErrorModal from "../components/ErrorModal";
 const GRADIENT_COLORS = ["#ff7e5f", "#feb47b"];
 
 export default function QRCheckInScreen({ navigation }) {
@@ -38,6 +37,14 @@ export default function QRCheckInScreen({ navigation }) {
   const [showNoZonesModal, setShowNoZonesModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+
+  // Error modal state
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalButtonText, setErrorModalButtonText] = useState("OK");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
 
   // Use a ref to track if we've already processed a QR code
   const hasProcessedQR = useRef(false);
@@ -95,6 +102,28 @@ export default function QRCheckInScreen({ navigation }) {
     checkStaffZones();
   }, []);
 
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    buttonText = "OK",
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalButtonText(buttonText);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
+
   const handleScanned = async ({ data }) => {
     // Prevent multiple scans or processing
     if (hasProcessedQR.current || isProcessing || !cameraEnabled) return;
@@ -132,12 +161,13 @@ export default function QRCheckInScreen({ navigation }) {
       );
 
       // Hiển thị thông báo thành công và chuyển sang bước checkedIn
-      Alert.alert("Thành công", "Đã checkin thành công vui lòng chọn bàn", [
-        {
-          text: "Tiếp tục",
-          onPress: () => setStep("checkedIn"),
-        },
-      ]);
+      showErrorModal(
+        "Thành công",
+        "Đã checkin thành công vui lòng chọn bàn",
+        "Tiếp tục",
+        true,
+        () => setStep("checkedIn")
+      );
     } catch (err) {
       console.log(err);
       // Extract error message from the nested structure
@@ -154,14 +184,7 @@ export default function QRCheckInScreen({ navigation }) {
         errorMessage = err.message;
       }
 
-      Alert.alert("Lỗi", errorMessage, [
-        {
-          text: "OK",
-          onPress: () => {
-            // Keep camera disabled until user explicitly enables it
-          },
-        },
-      ]);
+      showErrorModal("Lỗi", errorMessage);
     } finally {
       setLoading(false);
       setIsProcessing(false);
@@ -191,7 +214,7 @@ export default function QRCheckInScreen({ navigation }) {
     } catch (err) {
       const errorMessage =
         err.response?.data?.error?.message || "Không thể tải danh sách bàn.";
-      Alert.alert("Lỗi", errorMessage);
+      showErrorModal("Lỗi", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -215,14 +238,15 @@ export default function QRCheckInScreen({ navigation }) {
         }
       );
 
-      Alert.alert("Thành công", "Đã gán bàn thành công cho khách", [
-        {
-          text: "Tiếp tục quét QR",
-          onPress: () => resetState(),
-        },
-      ]);
+      showErrorModal(
+        "Thành công",
+        "Đã gán bàn thành công cho khách",
+        "Tiếp tục quét QR",
+        true,
+        resetState
+      );
     } catch {
-      Alert.alert("Lỗi", "Gán bàn thất bại. Vui lòng thử lại.");
+      showErrorModal("Lỗi", "Gán bàn thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -496,6 +520,16 @@ export default function QRCheckInScreen({ navigation }) {
             </View>
           </View>
         </Modal>
+
+        {/* Custom Error Modal */}
+        <ErrorModal
+          visible={errorModalVisible}
+          title={errorModalTitle}
+          message={errorModalMessage}
+          buttonText={errorModalButtonText}
+          isSuccess={errorModalIsSuccess}
+          onClose={closeErrorModal}
+        />
 
         {/* Loading Overlay */}
         {loading && (

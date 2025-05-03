@@ -1,14 +1,14 @@
+"use client";
+
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Image,
   SafeAreaView,
   StatusBar,
   Platform,
   Dimensions,
-  Alert,
   Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -19,7 +19,6 @@ import {
   Settings,
   Lock,
   LogOut,
-  Edit3,
   User,
   Shield,
   Info,
@@ -28,6 +27,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MainFeatures from "../components/HomePage/MainFeatures";
+import ErrorModal from "../components/ErrorModal";
 
 const { width } = Dimensions.get("window");
 
@@ -42,6 +42,9 @@ export default function ProfileScreen() {
     staffType: "",
     status: "",
   });
+
+  // Logout modal state
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     const loadStaffInfo = async () => {
@@ -69,23 +72,18 @@ export default function ProfileScreen() {
     loadStaffInfo();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.clear();
+      navigation.replace("Login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   const handleOptionPress = async (screen) => {
     if (screen === "Logout") {
-      try {
-        Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-          { text: "Hủy", style: "cancel" },
-          {
-            text: "Đăng xuất",
-            style: "destructive",
-            onPress: async () => {
-              await AsyncStorage.clear();
-              navigation.replace("Login");
-            },
-          },
-        ]);
-      } catch (error) {
-        console.error("Error during logout:", error);
-      }
+      setLogoutModalVisible(true);
     } else {
       navigation.navigate(screen);
     }
@@ -579,6 +577,18 @@ export default function ProfileScreen() {
           </Animated.ScrollView>
         </SafeAreaView>
       </LinearGradient>
+
+      {/* Logout Confirmation Modal */}
+      <ErrorModal
+        visible={logoutModalVisible}
+        title="Đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất?"
+        buttonText="Đăng xuất"
+        cancelText="Hủy"
+        isLogout={true}
+        onClose={handleLogout}
+        onCancel={() => setLogoutModalVisible(false)}
+      />
     </>
   );
 }
