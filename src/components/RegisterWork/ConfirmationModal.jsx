@@ -78,13 +78,17 @@ const ConfirmationModal = ({
               <Text className="text-gray-600 mb-5">{message}</Text>
 
               <View className="flex-row justify-end">
-                <TouchableOpacity
-                  onPress={onCancel}
-                  className="flex-row items-center justify-center bg-gray-100 rounded-xl py-2.5 px-4 mr-3"
-                >
-                  <X size={18} color="#6B7280" />
-                  <Text className="text-gray-700 font-medium ml-1.5">Hủy</Text>
-                </TouchableOpacity>
+                {onCancel && (
+                  <TouchableOpacity
+                    onPress={onCancel}
+                    className="flex-row items-center justify-center bg-gray-100 rounded-xl py-2.5 px-4 mr-3"
+                  >
+                    <X size={18} color="#6B7280" />
+                    <Text className="text-gray-700 font-medium ml-1.5">
+                      Hủy
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                   onPress={onConfirm}

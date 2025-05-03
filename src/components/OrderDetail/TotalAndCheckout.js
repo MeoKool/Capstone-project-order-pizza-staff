@@ -1,10 +1,11 @@
+"use client";
+
 import {
   View,
   Text,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Modal,
   ScrollView,
 } from "react-native";
@@ -14,6 +15,7 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 // Import the calculation function from the utility file
 import { calculateTotalAmount } from "./total-utils";
+import CustomModal from "../CustomModal";
 
 // Re-export the function for backward compatibility
 export { calculateTotalAmount };
@@ -21,15 +23,14 @@ export { calculateTotalAmount };
 const API_URL = "https://vietsac.id.vn";
 
 // Add a function to delete the voucher
-const deleteVoucher = async (orderVoucherId, onSuccess) => {
+const deleteVoucher = async (orderVoucherId, onSuccess, onError) => {
   try {
     const response = await axios.delete(
       `https://vietsac.id.vn/api/order-vouchers/${orderVoucherId}?isHardDeleted=false`
     );
 
     if (response.data.success) {
-      Alert.alert("Thành công", "Đã xóa mã giảm giá thành công");
-      if (onSuccess) onSuccess();
+      onSuccess("Thành công", "Đã xóa mã giảm giá thành công");
     } else {
       throw new Error(
         response.data.error.message || "Không thể xóa mã giảm giá"
@@ -44,7 +45,7 @@ const deleteVoucher = async (orderVoucherId, onSuccess) => {
       errorMessage = err.message;
     }
 
-    Alert.alert("Lỗi", errorMessage);
+    onError("Lỗi", errorMessage);
   }
 };
 
@@ -62,6 +63,26 @@ export default function TotalAndCheckout({
   const [cancelLoading, setCancelLoading] = useState(false);
   const [voucherModalVisible, setVoucherModalVisible] = useState(false);
   const [appliedVouchers, setAppliedVouchers] = useState([]);
+
+  // Modal states
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: "",
+    message: "",
+    type: "info",
+    primaryButtonText: "Đóng",
+    onPrimaryButtonPress: null,
+    secondaryButtonText: null,
+    onSecondaryButtonPress: null,
+  });
+
+  // Confirmation modal states
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState({
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   // Use the backend-calculated total if available, otherwise fallback to empty order
   const totalAmount = order?.totalPrice || 0;
@@ -83,91 +104,93 @@ export default function TotalAndCheckout({
     }
   }, [order]);
 
+  const showModal = (title, message, type = "info", options = {}) => {
+    setModalConfig({
+      title,
+      message,
+      type,
+      primaryButtonText: options.primaryButtonText || "Đóng",
+      onPrimaryButtonPress: options.onPrimaryButtonPress || null,
+      secondaryButtonText: options.secondaryButtonText || null,
+      onSecondaryButtonPress: options.onSecondaryButtonPress || null,
+    });
+    setModalVisible(true);
+  };
+
+  const showConfirmModal = (title, message, onConfirm) => {
+    setConfirmModalConfig({
+      title,
+      message,
+      onConfirm,
+    });
+    setConfirmModalVisible(true);
+  };
+
   const applyVoucher = async () => {
     if (!voucherCode.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập mã voucher");
-      return;
+      // Đóng modal voucher rồi báo lỗi
+      setVoucherModalVisible(false);
+      return showModal("Lỗi", "Vui lòng nhập mã voucher", "error");
     }
 
     try {
       setLoading(true);
 
-      // Step 1: Validate the voucher code
-      const validateResponse = await axios.get(
+      // 1) Validate code
+      const { data: validateRes } = await axios.get(
         `${API_URL}/api/vouchers/get-by-code`,
-        {
-          params: { Code: voucherCode.trim() },
-        }
+        { params: { Code: voucherCode.trim() } }
       );
-
-      if (!validateResponse.data.success) {
-        throw new Error(
-          validateResponse.data.error?.message || "Mã voucher không hợp lệ"
-        );
+      if (!validateRes.success) {
+        throw new Error(validateRes.error?.message);
       }
-
-      const voucher = validateResponse.data.result;
+      const voucher = validateRes.result;
 
       if (voucher.voucherStatus !== "Available" || voucher.isUsed) {
         throw new Error("Mã voucher đã được sử dụng hoặc không khả dụng");
       }
-
-      // Check if this voucher is already applied
       if (appliedVouchers.some((v) => v.id === voucher.id)) {
         throw new Error("Mã voucher này đã được áp dụng");
       }
 
-      // Step 2: Apply the voucher to the order
-      const applyResponse = await axios.post(`${API_URL}/api/order-vouchers`, {
-        orderId: order.id,
-        voucherId: voucher.id,
-      });
-
-      if (!applyResponse.data.success) {
-        throw new Error(
-          applyResponse.data.error?.message || "Không thể áp dụng voucher"
-        );
+      // 2) Apply voucher
+      const { data: applyRes } = await axios.post(
+        `${API_URL}/api/order-vouchers`,
+        { orderId: order.id, voucherId: voucher.id }
+      );
+      if (!applyRes.success) {
+        throw new Error(applyRes.error?.message);
       }
 
-      // Get the orderVoucherId from the response
-      const orderVoucherId = applyResponse.data.result.id;
-
-      // Add the new voucher to the list with its orderVoucherId
-      const newVoucher = {
-        ...voucher,
-        orderVoucherId: orderVoucherId,
-      };
-
-      // Clear the input and notify parent component
-      setVoucherCode("");
+      // Đóng modal nhập mã trước khi hiện thông báo
       setVoucherModalVisible(false);
 
-      // Update the local state
+      // Thêm voucher vào state
+      const newVoucher = { ...voucher, orderVoucherId: applyRes.result.id };
       setAppliedVouchers((prev) => [...prev, newVoucher]);
+      onVoucherApplied?.(newVoucher);
 
-      // Notify parent to refresh order data
-      if (onVoucherApplied) {
-        onVoucherApplied(newVoucher);
-      }
-
-      Alert.alert(
-        "Thành công",
-        `Đã áp dụng voucher giảm ${
-          voucher.discountType === "Percentage"
-            ? voucher.discountValue + "%"
-            : voucher.discountValue.toLocaleString("vi-VN") + " VNĐ"
-        }`
-      );
+      // Chờ 40‑50 ms để modal trước hẳn đóng rồi mới show
+      setTimeout(() => {
+        showModal(
+          "Thành công",
+          `Đã áp dụng voucher ${
+            voucher.discountType === "Percentage"
+              ? `giảm ${voucher.discountValue}%`
+              : `giảm ${voucher.discountValue.toLocaleString("vi-VN")} VNĐ`
+          }`,
+          "success"
+        );
+      }, 50);
     } catch (err) {
-      let errorMessage = "Không thể áp dụng voucher. Vui lòng thử lại.";
+      // Đóng modal nhập mã trước khi show lỗi
+      setVoucherModalVisible(false);
 
-      if (err.response && err.response.data) {
-        errorMessage = err.response.data.error?.message || errorMessage;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      Alert.alert("Lỗi", errorMessage);
+      const msg =
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        "Không thể áp dụng voucher. Vui lòng thử lại.";
+      setTimeout(() => showModal("Lỗi", msg, "error"), 50);
     } finally {
       setLoading(false);
     }
@@ -175,47 +198,72 @@ export default function TotalAndCheckout({
 
   const handleDeleteVoucher = (voucher) => {
     if (voucher.orderVoucherId) {
-      deleteVoucher(voucher.orderVoucherId, () => {
-        // Remove the voucher from the local state
-        setAppliedVouchers((prev) => prev.filter((v) => v.id !== voucher.id));
+      showConfirmModal(
+        "Xác nhận xóa",
+        `Bạn có chắc chắn muốn xóa voucher ${voucher.code}?`,
+        () => {
+          deleteVoucher(
+            voucher.orderVoucherId,
+            (title, message) => {
+              // Success callback
+              showModal(title, message, "success");
 
-        // Notify parent to refresh order data
-        if (onVoucherApplied) {
-          onVoucherApplied(null);
+              // Remove the voucher from the local state
+              setAppliedVouchers((prev) =>
+                prev.filter((v) => v.id !== voucher.id)
+              );
+
+              // Notify parent to refresh order data
+              if (onVoucherApplied) {
+                onVoucherApplied(null);
+              }
+            },
+            (title, message) => {
+              // Error callback
+              showModal(title, message, "error");
+            }
+          );
         }
-      });
+      );
     }
   };
 
   const cancelCheckout = async () => {
-    try {
-      setCancelLoading(true);
-      const response = await axios.put(
-        `${API_URL}/api/orders/cancel-check-out/${order.id}`
-      );
+    showConfirmModal(
+      "Xác nhận hủy",
+      "Bạn có chắc chắn muốn hủy checkout?",
+      async () => {
+        try {
+          setCancelLoading(true);
+          const response = await axios.put(
+            `${API_URL}/api/orders/cancel-check-out/${order.id}`
+          );
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Không thể hủy checkout");
+          if (!response.data.success) {
+            throw new Error(response.data.message || "Không thể hủy checkout");
+          }
+
+          showModal("Thành công", "Đã hủy checkout thành công", "success");
+
+          // Refresh the order data
+          if (onVoucherApplied) {
+            onVoucherApplied(null);
+          }
+        } catch (err) {
+          let errorMessage = "Không thể hủy checkout. Vui lòng thử lại.";
+
+          if (err.response && err.response.data) {
+            errorMessage = err.response.data.message || errorMessage;
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+
+          showModal("Lỗi", errorMessage, "error");
+        } finally {
+          setCancelLoading(false);
+        }
       }
-
-      Alert.alert("Thành công", "Đã hủy checkout thành công");
-      // Refresh the order data
-      if (onVoucherApplied) {
-        onVoucherApplied(null);
-      }
-    } catch (err) {
-      let errorMessage = "Không thể hủy checkout. Vui lòng thử lại.";
-
-      if (err.response && err.response.data) {
-        errorMessage = err.response.data.message || errorMessage;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      Alert.alert("Lỗi", errorMessage);
-    } finally {
-      setCancelLoading(false);
-    }
+    );
   };
 
   return (
@@ -269,6 +317,40 @@ export default function TotalAndCheckout({
           </View>
         </View>
       </Modal>
+
+      {/* Custom Modal */}
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        onClose={() => setModalVisible(false)}
+        primaryButtonText={modalConfig.primaryButtonText}
+        onPrimaryButtonPress={
+          modalConfig.onPrimaryButtonPress || (() => setModalVisible(false))
+        }
+        secondaryButtonText={modalConfig.secondaryButtonText}
+        onSecondaryButtonPress={modalConfig.onSecondaryButtonPress}
+        autoClose={modalConfig.type === "success"} // Auto close success messages
+      />
+
+      {/* Confirmation Modal */}
+      <CustomModal
+        visible={confirmModalVisible}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        type="warning"
+        onClose={() => setConfirmModalVisible(false)}
+        primaryButtonText="Xác nhận"
+        onPrimaryButtonPress={() => {
+          setConfirmModalVisible(false);
+          if (confirmModalConfig.onConfirm) {
+            confirmModalConfig.onConfirm();
+          }
+        }}
+        secondaryButtonText="Hủy"
+        onSecondaryButtonPress={() => setConfirmModalVisible(false)}
+      />
 
       {/* Show additional fees if they exist and not in checkout state */}
       {!isUnpaidState &&

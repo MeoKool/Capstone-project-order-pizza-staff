@@ -472,15 +472,11 @@ export default function WorkScheduleScreen({ navigation }) {
         end={{ x: 1, y: 1 }}
       >
         <SafeAreaView className="flex-1 justify-center items-center">
-          <Text className="text-white text-xl font-bold text-center px-6">
-            Nhân viên không cần đăng ký giờ làm việc.
-          </Text>
           <ConfirmationModal
             visible={confirmModalVisible}
             title={confirmModalData.title}
             message={confirmModalData.message}
             onConfirm={handleConfirmModalConfirm}
-            onCancel={handleConfirmModalCancel}
           />
         </SafeAreaView>
       </LinearGradient>
