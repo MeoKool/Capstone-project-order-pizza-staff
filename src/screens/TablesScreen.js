@@ -7,7 +7,6 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  Alert,
   Modal,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -20,8 +19,9 @@ import Header from "../components/Header";
 import SearchBar from "../components/Tables/SearchBar";
 import StatusFilter from "../components/Tables/StatusFilter";
 import ZoneItem from "../components/Tables/ZoneItem";
+import ErrorModal from "../components/ErrorModal";
 
-const API_URL = "http://vietsac.id.vn/pizza-service/api";
+const API_URL = "http://vietsac.id.vn/api";
 
 export default function TablesScreen() {
   const [tables, setTables] = useState([]);
@@ -38,6 +38,20 @@ export default function TablesScreen() {
   const scrollViewRef = useRef(null);
   const [hasNoZones, setHasNoZones] = useState(false);
   const [showNoZonesModal, setShowNoZonesModal] = useState(false);
+
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+
+  // Helper function to show error modal
+  const showErrorModal = (title, message, isSuccess = false) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalVisible(true);
+  };
 
   const fetchStaffZones = useCallback(async () => {
     try {
@@ -182,10 +196,12 @@ export default function TablesScreen() {
       await axios.put(`https://vietsac.id.vn/api/tables/open-table/${tableId}`);
       // Refresh tables after opening
       await fetchTablesAndZones();
-      Alert.alert("Thành công", "Đã mở bàn thành công");
+      // Use ErrorModal instead of Alert
+      showErrorModal("Thành công", "Đã mở bàn thành công", true);
     } catch (err) {
       console.error("Error opening table:", err);
-      Alert.alert("Lỗi", "Không thể mở bàn. Vui lòng thử lại sau.");
+      // Use ErrorModal instead of Alert
+      showErrorModal("Lỗi", "Không thể mở bàn. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }
@@ -389,6 +405,16 @@ export default function TablesScreen() {
             </View>
           )}
         </ScrollView>
+
+        {/* Error Modal */}
+        <ErrorModal
+          visible={errorModalVisible}
+          title={errorModalTitle}
+          message={errorModalMessage}
+          buttonText="OK"
+          isSuccess={errorModalIsSuccess}
+          onClose={() => setErrorModalVisible(false)}
+        />
       </SafeAreaView>
     </LinearGradient>
   );

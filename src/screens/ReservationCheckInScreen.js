@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Alert,
   ActivityIndicator,
   Modal,
 } from "react-native";
@@ -27,6 +26,7 @@ import {
 import { format } from "date-fns";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import ErrorModal from "../components/ErrorModal";
 
 export default function ReservationCheckInScreen({ navigation }) {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -35,6 +35,33 @@ export default function ReservationCheckInScreen({ navigation }) {
   const [checkingIn, setCheckingIn] = useState(false);
   const [hasNoZones, setHasNoZones] = useState(false);
   const [showNoZonesModal, setShowNoZonesModal] = useState(false);
+
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
 
   // Check if staff has assigned zones
   useEffect(() => {
@@ -82,7 +109,7 @@ export default function ReservationCheckInScreen({ navigation }) {
     }
 
     if (!phoneNumber || phoneNumber.length < 10) {
-      Alert.alert("Lỗi", "Vui lòng nhập số điện thoại hợp lệ");
+      showErrorModal("Lỗi", "Vui lòng nhập số điện thoại hợp lệ");
       return;
     }
 
@@ -115,7 +142,7 @@ export default function ReservationCheckInScreen({ navigation }) {
         setReservations(futureReservations);
 
         if (futureReservations.length === 0) {
-          Alert.alert(
+          showErrorModal(
             "Thông báo",
             "Không tìm thấy đặt bàn nào cho số điện thoại này hoặc đã quá hạn"
           );
@@ -123,14 +150,17 @@ export default function ReservationCheckInScreen({ navigation }) {
       } else {
         // Handle case where API call was successful but no items were returned
         setReservations([]);
-        Alert.alert(
+        showErrorModal(
           "Thông báo",
           responseData.message || "Không tìm thấy đặt bàn nào"
         );
       }
     } catch (error) {
       console.error("Error checking reservation:", error);
-      Alert.alert("Lỗi", "Không thể kiểm tra đặt bàn. Vui lòng thử lại sau.");
+      showErrorModal(
+        "Lỗi",
+        "Không thể kiểm tra đặt bàn. Vui lòng thử lại sau."
+      );
     } finally {
       setLoading(false);
     }
@@ -162,7 +192,7 @@ export default function ReservationCheckInScreen({ navigation }) {
       if (!response.ok) {
         // Extract error message from the response
         const errorMessage =
-          responseData.error.message ||
+          responseData.error?.message ||
           "Không thể check-in. Vui lòng thử lại sau.";
         throw new Error(errorMessage);
       }
@@ -174,10 +204,10 @@ export default function ReservationCheckInScreen({ navigation }) {
         )
       );
 
-      Alert.alert("Thành công", "Check-in thành công!");
+      showErrorModal("Thành công", "Check-in thành công!", true);
     } catch (error) {
       console.error("Error checking in:", error);
-      Alert.alert(
+      showErrorModal(
         "Lỗi",
         error.message || "Không thể check-in. Vui lòng thử lại sau."
       );
@@ -508,6 +538,16 @@ export default function ReservationCheckInScreen({ navigation }) {
               }
             />
           </View>
+
+          {/* Error Modal */}
+          <ErrorModal
+            visible={errorModalVisible}
+            title={errorModalTitle}
+            message={errorModalMessage}
+            buttonText="OK"
+            isSuccess={errorModalIsSuccess}
+            onClose={closeErrorModal}
+          />
         </SafeAreaView>
       </LinearGradient>
     </>
