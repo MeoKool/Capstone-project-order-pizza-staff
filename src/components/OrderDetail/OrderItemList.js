@@ -1,10 +1,9 @@
-"use client";
-
 import { useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { ChevronDown, ChevronUp, X } from "lucide-react-native";
 import OrderItem from "./OrderItem";
 import axios from "axios";
+import ErrorModal from "../ErrorModal";
 
 export default function OrderItemList({
   orderItems,
@@ -18,6 +17,11 @@ export default function OrderItemList({
     "Hoàn thành": true,
   });
   const [closingTable, setClosingTable] = useState(false);
+
+  // Error modal state
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
 
   const sections = [
     {
@@ -72,13 +76,20 @@ export default function OrderItemList({
       if (response.data && response.data.success) {
         navigation && navigation.goBack();
       } else {
-        Alert.alert("Lỗi", "Không thể đóng bàn. Vui lòng thử lại sau.");
+        // Show error modal instead of Alert
+        setErrorModalTitle("Lỗi");
+        setErrorModalMessage("Không thể đóng bàn. Vui lòng thử lại sau.");
+        setErrorModalVisible(true);
       }
     } catch (err) {
       console.error("Error closing table:", err);
       const errorMessage =
         err.response?.data?.error?.message || "Có lỗi xảy ra khi đóng bàn";
-      Alert.alert("Lỗi", errorMessage);
+
+      // Show error modal instead of Alert
+      setErrorModalTitle("Lỗi");
+      setErrorModalMessage(errorMessage);
+      setErrorModalVisible(true);
     } finally {
       setClosingTable(false);
     }
@@ -141,29 +152,40 @@ export default function OrderItemList({
 
   // If there are order items, show the sections
   return (
-    <FlatList
-      data={sections}
-      renderItem={({ item }) => (
-        <View>
-          {renderSectionHeader({ section: item })}
-          {expandedSections[item.title] && (
-            <View>
-              {item.data.map((orderItem) => (
-                <OrderItem
-                  key={orderItem.id}
-                  item={orderItem}
-                  onRefresh={onRetry}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-      keyExtractor={(item, index) => index.toString()}
-      contentContainerStyle={{
-        paddingHorizontal: 16,
-        paddingBottom: 100,
-      }}
-    />
+    <>
+      <FlatList
+        data={sections}
+        renderItem={({ item }) => (
+          <View>
+            {renderSectionHeader({ section: item })}
+            {expandedSections[item.title] && (
+              <View>
+                {item.data.map((orderItem) => (
+                  <OrderItem
+                    key={orderItem.id}
+                    item={orderItem}
+                    onRefresh={onRetry}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 100,
+        }}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={errorModalVisible}
+        title={errorModalTitle}
+        message={errorModalMessage}
+        buttonText="OK"
+        onClose={() => setErrorModalVisible(false)}
+      />
+    </>
   );
 }
