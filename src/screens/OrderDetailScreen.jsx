@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SafeAreaView, Alert, View } from "react-native";
+import { SafeAreaView, View } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,6 +11,7 @@ import LoadingScreen from "./LoadingScreen";
 import OrderItemList from "../components/OrderDetail/OrderItemList";
 import TotalAndCheckout from "../components/OrderDetail/TotalAndCheckout";
 import Header from "../components/Header";
+import ErrorModal from "../components/ErrorModal";
 
 const API_URL = "https://vietsac.id.vn";
 
@@ -21,6 +22,13 @@ export default function TableDetailsScreen() {
   const [error, setError] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [tableId, setTableId] = useState(null);
+
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -40,6 +48,26 @@ export default function TableDetailsScreen() {
     const unsubscribe = navigation.addListener("focus", fetchOrderItems);
     return unsubscribe;
   }, [navigation, routeTableId]);
+
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
 
   const fetchTableId = async () => {
     try {
@@ -107,8 +135,8 @@ export default function TableDetailsScreen() {
         // Update the order state with the new data that includes fees
         setOrder(orderResponse.data.result);
 
-        // Show success message
-        Alert.alert("Thành công", "Checkout thành công");
+        // Show success message using ErrorModal instead of Alert
+        showErrorModal("Thành công", "Checkout thành công", true);
       } else {
         throw new Error(checkoutResponse.data.message || "Thanh toán thất bại");
       }
@@ -124,7 +152,8 @@ export default function TableDetailsScreen() {
         errorMessage = err.message;
       }
 
-      Alert.alert("Lỗi", errorMessage);
+      // Show error message using ErrorModal instead of Alert
+      showErrorModal("Lỗi", errorMessage);
     } finally {
       setCheckingOut(false);
     }
@@ -181,6 +210,16 @@ export default function TableDetailsScreen() {
               />
             )}
           </View>
+
+          {/* Error Modal */}
+          <ErrorModal
+            visible={errorModalVisible}
+            title={errorModalTitle}
+            message={errorModalMessage}
+            buttonText="OK"
+            isSuccess={errorModalIsSuccess}
+            onClose={closeErrorModal}
+          />
         </SafeAreaView>
       </LinearGradient>
     </GestureHandlerRootView>

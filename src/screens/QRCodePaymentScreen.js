@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   ScrollView,
   Dimensions,
 } from "react-native";
@@ -24,7 +23,7 @@ import {
 } from "lucide-react-native";
 import axios from "axios";
 import { calculateTotalAmount } from "../components/OrderDetail/total-utils";
-// Update the import to use the utility file
+import ErrorModal from "../components/ErrorModal";
 
 const { width } = Dimensions.get("window");
 const API_URL = "https://vietsac.id.vn";
@@ -42,8 +41,62 @@ export default function QRCodePaymentScreen() {
   const [error, setError] = useState(null);
   const [switchingMethod, setSwitchingMethod] = useState(false);
 
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+  const [errorModalIsWarning, setErrorModalIsWarning] = useState(false);
+  const [errorModalCancelText, setErrorModalCancelText] = useState("Hủy");
+  const [errorModalOnCancel, setErrorModalOnCancel] = useState(() => {});
+
   // Use backend total if available, otherwise calculate from items
   const totalAmount = order?.totalPrice || calculateTotalAmount(orderItems);
+
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalIsWarning(false);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to show confirmation modal
+  const showConfirmationModal = (
+    title,
+    message,
+    onConfirm,
+    cancelText = "Hủy"
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(false);
+    setErrorModalIsWarning(true);
+    setErrorModalCallback(() => onConfirm);
+    setErrorModalCancelText(cancelText);
+    setErrorModalOnCancel(() => {});
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
+
+  // Helper function to cancel modal action
+  const cancelModalAction = () => {
+    setErrorModalVisible(false);
+    errorModalOnCancel();
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,12 +118,16 @@ export default function QRCodePaymentScreen() {
         // Just pass the error directly from backend
         if (error.response && error.response.data) {
           setError(error.response.data);
-          Alert.alert(
+          showErrorModal(
             "Lỗi",
-            error.response.data.error.message || "Không thể khởi tạo thanh toán"
+            error.response.data.error?.message ||
+              "Không thể khởi tạo thanh toán"
           );
         } else {
-          Alert.alert("Lỗi", error.message || "Không thể khởi tạo thanh toán");
+          showErrorModal(
+            "Lỗi",
+            error.message || "Không thể khởi tạo thanh toán"
+          );
         }
         setLoading(false);
       }
@@ -102,12 +159,12 @@ export default function QRCodePaymentScreen() {
       // Just pass the error directly from backend
       if (error.response && error.response.data) {
         setError(error.response.data);
-        Alert.alert(
+        showErrorModal(
           "Lỗi",
           error.response.data.message || "Không thể hủy thanh toán QR"
         );
       } else {
-        Alert.alert("Lỗi", error.message || "Không thể hủy thanh toán QR");
+        showErrorModal("Lỗi", error.message || "Không thể hủy thanh toán QR");
       }
       return false;
     } finally {
@@ -142,14 +199,14 @@ export default function QRCodePaymentScreen() {
 
         // Just pass the error directly from backend
         if (qrError.response && qrError.response.data) {
-          setError(qrError.response.data.error.message);
-          Alert.alert(
+          setError(qrError.response.data.error?.message);
+          showErrorModal(
             "Lỗi",
-            qrError.response.data.error.message ||
+            qrError.response.data.error?.message ||
               "Không thể tạo mã QR thanh toán"
           );
         } else {
-          Alert.alert(
+          showErrorModal(
             "Lỗi",
             qrError.message || "Không thể tạo mã QR thanh toán"
           );
@@ -177,12 +234,12 @@ export default function QRCodePaymentScreen() {
       // Just pass the error directly from backend
       if (error.response && error.response.data) {
         setError(error.response.data);
-        Alert.alert(
+        showErrorModal(
           "Lỗi",
           error.response.data.message || "Không thể xử lý thanh toán tiền mặt"
         );
       } else {
-        Alert.alert(
+        showErrorModal(
           "Lỗi",
           error.message || "Không thể xử lý thanh toán tiền mặt"
         );
@@ -210,13 +267,13 @@ export default function QRCodePaymentScreen() {
       // Just pass the error directly from backend
       if (error.response && error.response.data) {
         setError(error.response.data);
-        Alert.alert(
+        showErrorModal(
           "Lỗi",
-          error.response.data.error.message ||
+          error.response.data.error?.message ||
             "Không thể làm mới mã QR thanh toán"
         );
       } else {
-        Alert.alert(
+        showErrorModal(
           "Lỗi",
           error.message || "Không thể làm mới mã QR thanh toán"
         );
@@ -227,49 +284,50 @@ export default function QRCodePaymentScreen() {
   };
 
   const handleCancelPayment = async () => {
-    Alert.alert("Xác nhận hủy", "Bạn có chắc chắn muốn hủy thanh toán này?", [
-      {
-        text: "Không",
-        style: "cancel",
-      },
-      {
-        text: "Có, hủy thanh toán",
-        onPress: async () => {
-          try {
-            setCancellingPayment(true);
-            setError(null);
+    showConfirmationModal(
+      "Xác nhận hủy",
+      "Bạn có chắc chắn muốn hủy thanh toán này?",
+      async () => {
+        try {
+          setCancellingPayment(true);
+          setError(null);
 
-            const response = await axios.post(
-              `${API_URL}/api/payments/cancel-payment-qrcode/${orderId}`
+          const response = await axios.post(
+            `${API_URL}/api/payments/cancel-payment-qrcode/${orderId}`
+          );
+
+          if (response.data.success) {
+            showErrorModal(
+              "Thành công",
+              "Đã hủy thanh toán thành công",
+              true,
+              () => {
+                navigation.goBack();
+              }
             );
-
-            if (response.data.success) {
-              Alert.alert("Thành công", "Đã hủy thanh toán thành công");
-              navigation.goBack();
-            } else {
-              throw new Error(
-                response.data.message || "Không thể hủy thanh toán"
-              );
-            }
-          } catch (error) {
-            console.error("Cancel payment error:", error);
-
-            // Just pass the error directly from backend
-            if (error.response && error.response.data) {
-              setError(error.response.data);
-              Alert.alert(
-                "Lỗi",
-                error.response.data.message || "Không thể hủy thanh toán"
-              );
-            } else {
-              Alert.alert("Lỗi", error.message || "Không thể hủy thanh toán");
-            }
-          } finally {
-            setCancellingPayment(false);
+          } else {
+            throw new Error(
+              response.data.message || "Không thể hủy thanh toán"
+            );
           }
-        },
-      },
-    ]);
+        } catch (error) {
+          console.error("Cancel payment error:", error);
+
+          // Just pass the error directly from backend
+          if (error.response && error.response.data) {
+            setError(error.response.data);
+            showErrorModal(
+              "Lỗi",
+              error.response.data.message || "Không thể hủy thanh toán"
+            );
+          } else {
+            showErrorModal("Lỗi", error.message || "Không thể hủy thanh toán");
+          }
+        } finally {
+          setCancellingPayment(false);
+        }
+      }
+    );
   };
 
   // Function to handle returning to order screen to fix voucher issues
@@ -490,6 +548,19 @@ export default function QRCodePaymentScreen() {
               )}
           </View>
         </ScrollView>
+
+        {/* Error Modal */}
+        <ErrorModal
+          visible={errorModalVisible}
+          title={errorModalTitle}
+          message={errorModalMessage}
+          buttonText="OK"
+          isSuccess={errorModalIsSuccess}
+          isWarning={errorModalIsWarning}
+          onClose={closeErrorModal}
+          onCancel={errorModalIsWarning ? cancelModalAction : undefined}
+          cancelText={errorModalCancelText}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
