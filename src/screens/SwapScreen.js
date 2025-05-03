@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -9,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
-  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -25,8 +26,6 @@ import {
   Clock8,
   CheckCircle,
   XCircle,
-  ThumbsUp,
-  ThumbsDown,
 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Calendar as RNCalendar } from "react-native-calendars";
@@ -41,12 +40,14 @@ import {
   approveSwapRequest,
   rejectSwapRequest,
 } from "../components/SwapSchedule/apiService";
+import ErrorModal from "../components/ErrorModal";
 
 export default function ShiftSwapScreen({ navigation }) {
   // State for shifts and UI
   const [myShifts, setMyShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [staffId, setStaffId] = useState("");
+  const [staffStatus, setStaffStatus] = useState("");
   const [error, setError] = useState(null);
 
   // State for swap flow
@@ -79,13 +80,51 @@ export default function ShiftSwapScreen({ navigation }) {
   // Add state for request actions
   const [processingRequestIds, setProcessingRequestIds] = useState({});
 
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
+
   // Load staff ID and configurations on component mount
   useEffect(() => {
     const getStaffId = async () => {
       const id = await AsyncStorage.getItem("staffId");
+      const status = await AsyncStorage.getItem("staffStatus");
       if (id) {
         setStaffId(id);
         loadSwapRequests(id);
+      }
+      if (status) {
+        setStaffStatus(status);
+        // Check if staff is full-time and show message
+        if (status === "FullTime") {
+          showErrorModal(
+            "Thông báo",
+            "Nhân viên toàn thời gian không được đổi ca làm việc"
+          );
+        }
       }
     };
     getStaffId();
@@ -138,13 +177,18 @@ export default function ShiftSwapScreen({ navigation }) {
       await approveSwapRequest(requestId);
 
       // Show success message
-      Alert.alert("Thành công", "Yêu cầu đổi ca đã được chấp nhận");
-
-      // Reload swap requests
-      await loadSwapRequests(staffId);
+      showErrorModal(
+        "Thành công",
+        "Yêu cầu đổi ca đã được chấp nhận",
+        true,
+        () => {
+          // Reload swap requests
+          loadSwapRequests(staffId);
+        }
+      );
     } catch (error) {
       console.error("Error approving swap request:", error);
-      Alert.alert(
+      showErrorModal(
         "Lỗi",
         error.message || "Không thể chấp nhận yêu cầu đổi ca. Vui lòng thử lại."
       );
@@ -171,13 +215,13 @@ export default function ShiftSwapScreen({ navigation }) {
       await rejectSwapRequest(requestId);
 
       // Show success message
-      Alert.alert("Thành công", "Yêu cầu đổi ca đã bị từ chối");
-
-      // Reload swap requests
-      await loadSwapRequests(staffId);
+      showErrorModal("Thành công", "Yêu cầu đổi ca đã bị từ chối", true, () => {
+        // Reload swap requests
+        loadSwapRequests(staffId);
+      });
     } catch (error) {
       console.error("Error rejecting swap request:", error);
-      Alert.alert(
+      showErrorModal(
         "Lỗi",
         error.message || "Không thể từ chối yêu cầu đổi ca. Vui lòng thử lại."
       );
@@ -238,11 +282,15 @@ export default function ShiftSwapScreen({ navigation }) {
       setLoading(true);
       setError(null);
       const id = await AsyncStorage.getItem("staffId");
+      const status = await AsyncStorage.getItem("staffStatus");
+
       if (!id) {
         setError("Staff ID not found. Please login again.");
         return;
       }
+
       setStaffId(id);
+      setStaffStatus(status);
 
       const shiftsData = await fetchMyShifts(id);
       setMyShifts(shiftsData);
@@ -279,6 +327,15 @@ export default function ShiftSwapScreen({ navigation }) {
 
   // Handle source date selection
   const handleSourceDateSelect = async (date) => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     try {
       // Update marked dates to show selection while preserving dots
       const newMarkedDates = { ...markedDates };
@@ -315,11 +372,11 @@ export default function ShiftSwapScreen({ navigation }) {
       if (myShiftsForDate.length > 0) {
         setStep(2);
       } else {
-        Alert.alert("Thông báo", "Bạn không có ca làm nào vào ngày này");
+        showErrorModal("Thông báo", "Bạn không có ca làm nào vào ngày này");
       }
     } catch (error) {
       console.error("Error loading shifts:", error);
-      Alert.alert("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
+      showErrorModal("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
     } finally {
       setLoading(false);
     }
@@ -327,12 +384,30 @@ export default function ShiftSwapScreen({ navigation }) {
 
   // Handle source shift selection
   const handleSourceShiftSelect = (shift) => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn th���i gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     setSelectedSourceShift(shift);
     setStep(3);
   };
 
   // Handle target date selection
   const handleTargetDateSelect = async (date) => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     try {
       setSelectedTargetDate(date.dateString);
       setLoading(true);
@@ -348,11 +423,14 @@ export default function ShiftSwapScreen({ navigation }) {
       if (otherShifts.length > 0) {
         setStep(4);
       } else {
-        Alert.alert("Thông báo", "Không có ca làm nào khả dụng vào ngày này");
+        showErrorModal(
+          "Thông báo",
+          "Không có ca làm nào khả dụng vào ngày này"
+        );
       }
     } catch (error) {
       console.error("Error loading shifts:", error);
-      Alert.alert("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
+      showErrorModal("Lỗi", "Không thể tải ca làm việc cho ngày đã chọn");
     } finally {
       setLoading(false);
     }
@@ -360,12 +438,30 @@ export default function ShiftSwapScreen({ navigation }) {
 
   // Handle target shift selection
   const handleTargetShiftSelect = (shift) => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     setSelectedTargetShift(shift);
     setIsModalVisible(true);
   };
 
   // Handle swap submission
   const handleSubmitSwap = async () => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -381,22 +477,26 @@ export default function ShiftSwapScreen({ navigation }) {
 
       await submitShiftSwap(swapData);
 
-      Alert.alert("Thành công", "Yêu cầu đổi ca đã được gửi thành công", [
-        {
-          text: "OK",
-          onPress: () => {
-            setIsModalVisible(false);
-            resetFlow();
-            loadMyShifts();
-            loadSwapRequests(staffId);
-          },
-        },
-      ]);
+      showErrorModal(
+        "Thành công",
+        "Yêu cầu đổi ca đã được gửi thành công",
+        true,
+        () => {
+          setIsModalVisible(false);
+          resetFlow();
+          loadMyShifts();
+          loadSwapRequests(staffId);
+        }
+      );
     } catch (error) {
       console.error("Error submitting shift swap:", error);
       setError(
         error.message ||
           "Failed to submit shift swap request. Please try again."
+      );
+      showErrorModal(
+        "Lỗi",
+        error.message || "Không thể gửi yêu cầu đổi ca. Vui lòng thử lại."
       );
     } finally {
       setSubmitting(false);
@@ -664,6 +764,7 @@ export default function ShiftSwapScreen({ navigation }) {
     <TouchableOpacity
       className="bg-white rounded-xl p-4 mb-3 shadow-sm"
       onPress={() => handleSourceShiftSelect(item)}
+      disabled={staffStatus === "FullTime"}
     >
       <View className="flex-row justify-between items-center mb-2">
         <View className="flex-row items-center">
@@ -694,6 +795,7 @@ export default function ShiftSwapScreen({ navigation }) {
     <TouchableOpacity
       className="bg-white rounded-xl p-4 mb-3 shadow-sm"
       onPress={() => handleTargetShiftSelect(item)}
+      disabled={staffStatus === "FullTime"}
     >
       <View className="flex-row justify-between items-center mb-2">
         <View className="flex-row items-center">
@@ -728,6 +830,16 @@ export default function ShiftSwapScreen({ navigation }) {
       case 1:
         return (
           <ScrollView className="px-4">
+            {/* Full-time employee warning */}
+            {staffStatus === "FullTime" && (
+              <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200 flex-row items-start">
+                <AlertTriangle size={20} color="#FF9800" className="mr-2" />
+                <Text className="text-orange-600 flex-1">
+                  Nhân viên toàn thời gian không được đổi ca làm việc
+                </Text>
+              </View>
+            )}
+
             <Text className="text-white text-base mb-2">
               Chọn ngày có ca làm của bạn:
             </Text>
@@ -971,6 +1083,16 @@ export default function ShiftSwapScreen({ navigation }) {
             </View>
           )}
 
+          {/* Full-time employee warning */}
+          {staffStatus === "FullTime" && (
+            <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200 flex-row items-start">
+              <AlertTriangle size={20} color="#FF9800" className="mr-2" />
+              <Text className="text-orange-600 flex-1">
+                Nhân viên toàn thời gian không được đổi ca làm việc
+              </Text>
+            </View>
+          )}
+
           <ScrollView className="flex-1 mb-4">
             <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
               <Text className="font-semibold text-gray-800 mb-2">
@@ -1055,10 +1177,12 @@ export default function ShiftSwapScreen({ navigation }) {
 
           <TouchableOpacity
             className={`rounded-xl py-4 items-center ${
-              submitting ? "bg-gray-400" : "bg-orange-500"
+              submitting || staffStatus === "FullTime"
+                ? "bg-gray-400"
+                : "bg-orange-500"
             }`}
             onPress={handleSubmitSwap}
-            disabled={submitting}
+            disabled={submitting || staffStatus === "FullTime"}
           >
             {submitting ? (
               <ActivityIndicator color="white" />
@@ -1103,6 +1227,16 @@ export default function ShiftSwapScreen({ navigation }) {
 
           {/* Confirmation Modal */}
           {renderConfirmationModal()}
+
+          {/* Error Modal */}
+          <ErrorModal
+            visible={errorModalVisible}
+            title={errorModalTitle}
+            message={errorModalMessage}
+            buttonText="Đóng"
+            isSuccess={errorModalIsSuccess}
+            onClose={closeErrorModal}
+          />
         </SafeAreaView>
       </LinearGradient>
     </>
