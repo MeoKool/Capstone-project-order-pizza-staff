@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView } from "expo-camera";
@@ -9,6 +8,7 @@ export default function CameraScanner({
   scanned,
   onScanned,
   onRetry,
+  cameraEnabled = true,
 }) {
   return (
     <>
@@ -21,7 +21,9 @@ export default function CameraScanner({
             marginBottom: 16,
           }}
         >
-          Đặt mã QR vào khung để quét
+          {cameraEnabled
+            ? "Đặt mã QR vào khung để quét"
+            : "Quét mã QR hoàn tất"}
         </Text>
       </View>
 
@@ -34,12 +36,28 @@ export default function CameraScanner({
           borderColor: "rgba(255,255,255,0.3)",
         }}
       >
-        <CameraView
-          style={{ flex: 1 }}
-          facing={facing}
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={scanned ? undefined : onScanned}
-        />
+        {cameraEnabled ? (
+          <CameraView
+            style={{ flex: 1 }}
+            facing={facing}
+            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            onBarcodeScanned={onScanned}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.8)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
+            <Text style={{ color: "white", marginTop: 16, fontSize: 18 }}>
+              Đã quét xong
+            </Text>
+          </View>
+        )}
         <View
           style={{
             position: "absolute",
@@ -64,26 +82,14 @@ export default function CameraScanner({
           padding: 12,
         }}
         onPress={() => setFacing(facing === "back" ? "front" : "back")}
+        disabled={!cameraEnabled}
       >
-        <Ionicons name="camera-reverse-outline" size={28} color="white" />
+        <Ionicons
+          name="camera-reverse-outline"
+          size={28}
+          color={cameraEnabled ? "white" : "rgba(255,255,255,0.5)"}
+        />
       </TouchableOpacity>
-
-      {scanned && (
-        <TouchableOpacity
-          style={{
-            marginTop: 16,
-            backgroundColor: "white",
-            borderRadius: 9999,
-            paddingVertical: 16,
-            alignItems: "center",
-          }}
-          onPress={onRetry}
-        >
-          <Text style={{ color: "#ff7e5f", fontWeight: "bold", fontSize: 16 }}>
-            Quét lại
-          </Text>
-        </TouchableOpacity>
-      )}
     </>
   );
 }

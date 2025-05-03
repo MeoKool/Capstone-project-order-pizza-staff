@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -36,12 +36,25 @@ export default function QRCheckInScreen({ navigation }) {
   const [step, setStep] = useState("scan"); // scan | checkedIn | selectTable
   const [hasNoZones, setHasNoZones] = useState(false);
   const [showNoZonesModal, setShowNoZonesModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+
+  // Use a ref to track if we've already processed a QR code
+  const hasProcessedQR = useRef(false);
 
   useEffect(() => {
     if (permission?.status !== "granted") {
       requestPermission();
     }
   }, [permission]);
+
+  // Reset the processed flag when returning to scan step
+  useEffect(() => {
+    if (step === "scan") {
+      hasProcessedQR.current = false;
+      setCameraEnabled(true);
+    }
+  }, [step]);
 
   // Check if staff has assigned zones
   useEffect(() => {
@@ -83,16 +96,14 @@ export default function QRCheckInScreen({ navigation }) {
   }, []);
 
   const handleScanned = async ({ data }) => {
-    if (scanned) return;
+    // Prevent multiple scans or processing
+    if (hasProcessedQR.current || isProcessing || !cameraEnabled) return;
 
-    // Check if staff has no zones and show modal instead
-    if (hasNoZones) {
-      setScanned(true);
-      setShowNoZonesModal(true);
-      return;
-    }
-
+    // Immediately disable camera and mark as processed
+    setCameraEnabled(false);
+    hasProcessedQR.current = true;
     setScanned(true);
+    setIsProcessing(true);
     setLoading(true);
 
     try {
@@ -105,10 +116,10 @@ export default function QRCheckInScreen({ navigation }) {
 
       // Gán thông tin và cờ đã check-in
       setRegisterInfo({ ...register, code: data });
-      setStep("checkedIn");
 
       // Nếu đã có tableId thì không gọi API check-in nữa
       if (register.tableId) {
+        setStep("checkedIn");
         return; // chỉ hiển thị thông tin
       }
 
@@ -119,12 +130,48 @@ export default function QRCheckInScreen({ navigation }) {
           workshopRegisterId: register.id,
         }
       );
+
+      // Hiển thị thông báo thành công và chuyển sang bước checkedIn
+      Alert.alert("Thành công", "Đã checkin thành công vui lòng chọn bàn", [
+        {
+          text: "Tiếp tục",
+          onPress: () => setStep("checkedIn"),
+        },
+      ]);
     } catch (err) {
-      Alert.alert("Lỗi", err.message || "Không thể xử lý mã QR.");
-      setScanned(false);
+      console.log(err);
+      // Extract error message from the nested structure
+      let errorMessage = "Không thể xử lý mã QR.";
+
+      if (err.response && err.response.data && err.response.data.error) {
+        // Extract from the error structure
+        errorMessage = err.response.data.error.message;
+      } else if (err.data && err.data.error) {
+        // Alternative path if error is in err.data
+        errorMessage = err.data.error.message;
+      } else if (err.message) {
+        // Fallback to err.message if available
+        errorMessage = err.message;
+      }
+
+      Alert.alert("Lỗi", errorMessage, [
+        {
+          text: "OK",
+          onPress: () => {
+            // Keep camera disabled until user explicitly enables it
+          },
+        },
+      ]);
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
+  };
+
+  const resetScan = () => {
+    setScanned(false);
+    hasProcessedQR.current = false;
+    setCameraEnabled(true);
   };
 
   const fetchTables = async () => {
@@ -187,6 +234,9 @@ export default function QRCheckInScreen({ navigation }) {
     setSelectedTableId(null);
     setTables([]);
     setStep("scan");
+    setIsProcessing(false);
+    hasProcessedQR.current = false;
+    setCameraEnabled(true);
   };
 
   const goBack = () => {
@@ -316,13 +366,40 @@ export default function QRCheckInScreen({ navigation }) {
                     </Text>
                   </View>
                 ) : (
-                  <CameraScanner
-                    facing={facing}
-                    setFacing={setFacing}
-                    scanned={scanned}
-                    onScanned={handleScanned}
-                    onRetry={() => setScanned(false)}
-                  />
+                  <>
+                    <CameraScanner
+                      facing={facing}
+                      setFacing={setFacing}
+                      scanned={scanned}
+                      onScanned={handleScanned}
+                      onRetry={resetScan}
+                      cameraEnabled={cameraEnabled}
+                    />
+
+                    {/* Show retry button when camera is disabled */}
+                    {!cameraEnabled && (
+                      <TouchableOpacity
+                        style={{
+                          marginTop: 16,
+                          backgroundColor: "white",
+                          borderRadius: 9999,
+                          paddingVertical: 16,
+                          alignItems: "center",
+                        }}
+                        onPress={resetScan}
+                      >
+                        <Text
+                          style={{
+                            color: "#ff7e5f",
+                            fontWeight: "bold",
+                            fontSize: 16,
+                          }}
+                        >
+                          Quét lại
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </>
             )}
