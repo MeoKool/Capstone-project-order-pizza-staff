@@ -6,11 +6,11 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { X, Calendar, Clock, MapPin, AlertTriangle } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchAvailableShifts, submitShiftSwap } from "./apiService";
+import ErrorModal from "../components/QRCheckin/ErrorModal";
 
 export default function ShiftSwapModal({
   isVisible,
@@ -23,13 +23,59 @@ export default function ShiftSwapModal({
   const [availableShifts, setAvailableShifts] = useState([]);
   const [selectedSwapShift, setSelectedSwapShift] = useState(null);
   const [error, setError] = useState(null);
+  const [staffStatus, setStaffStatus] = useState(null);
+
+  // Error modal states
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalTitle, setErrorModalTitle] = useState("");
+  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalIsSuccess, setErrorModalIsSuccess] = useState(false);
+  const [errorModalCallback, setErrorModalCallback] = useState(() => {});
+
+  // Helper function to show error modal
+  const showErrorModal = (
+    title,
+    message,
+    isSuccess = false,
+    callback = () => {}
+  ) => {
+    setErrorModalTitle(title);
+    setErrorModalMessage(message);
+    setErrorModalIsSuccess(isSuccess);
+    setErrorModalCallback(() => callback);
+    setErrorModalVisible(true);
+  };
+
+  // Helper function to close error modal and execute callback
+  const closeErrorModal = () => {
+    setErrorModalVisible(false);
+    errorModalCallback();
+  };
 
   useEffect(() => {
     if (isVisible && selectedShift) {
       setError(null);
+      checkStaffStatus();
       loadAvailableShifts();
     }
   }, [isVisible, selectedShift]);
+
+  const checkStaffStatus = async () => {
+    try {
+      const status = await AsyncStorage.getItem("staffStatus");
+      setStaffStatus(status);
+
+      // Check if staff is full-time and show message
+      if (status === "FullTime") {
+        showErrorModal(
+          "Thông báo",
+          "Nhân viên toàn thời gian không được đổi ca làm việc"
+        );
+      }
+    } catch (error) {
+      console.error("Error checking staff status:", error);
+    }
+  };
 
   const loadAvailableShifts = async () => {
     try {
@@ -56,8 +102,17 @@ export default function ShiftSwapModal({
   };
 
   const handleSubmit = async () => {
+    // Check if staff is full-time
+    if (staffStatus === "FullTime") {
+      showErrorModal(
+        "Thông báo",
+        "Nhân viên toàn thời gian không được đổi ca làm việc"
+      );
+      return;
+    }
+
     if (!selectedSwapShift) {
-      Alert.alert("Lỗi", "Vui lòng chọn ca làm muốn đổi");
+      showErrorModal("Lỗi", "Vui lòng chọn ca làm muốn đổi");
       return;
     }
 
@@ -77,14 +132,24 @@ export default function ShiftSwapModal({
 
       await submitShiftSwap(swapData);
 
-      Alert.alert("Thành công", "Yêu cầu đổi ca đã được gửi thành công");
-      if (onSuccess) onSuccess();
-      onClose();
+      showErrorModal(
+        "Thành công",
+        "Yêu cầu đổi ca đã được gửi thành công",
+        true,
+        () => {
+          if (onSuccess) onSuccess();
+          onClose();
+        }
+      );
     } catch (error) {
       console.error("Error submitting shift swap:", error);
       setError(
         error.message ||
           "Failed to submit shift swap request. Please try again."
+      );
+      showErrorModal(
+        "Lỗi",
+        error.message || "Không thể gửi yêu cầu đổi ca. Vui lòng thử lại sau."
       );
     } finally {
       setSubmitting(false);
@@ -123,6 +188,16 @@ export default function ShiftSwapModal({
             <View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200 flex-row items-start">
               <AlertTriangle size={20} color="#EF4444" className="mr-2" />
               <Text className="text-red-600 flex-1">{error}</Text>
+            </View>
+          )}
+
+          {/* Full-time employee warning */}
+          {staffStatus === "FullTime" && (
+            <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200 flex-row items-start">
+              <AlertTriangle size={20} color="#FF9800" className="mr-2" />
+              <Text className="text-orange-600 flex-1">
+                Nhân viên toàn thời gian không được đổi ca làm việc
+              </Text>
             </View>
           )}
 
@@ -174,6 +249,7 @@ export default function ShiftSwapModal({
                         : "border-gray-200"
                     }`}
                     onPress={() => setSelectedSwapShift(shift)}
+                    disabled={staffStatus === "FullTime"}
                   >
                     <View className="flex-row items-center mb-1">
                       <Calendar size={16} color="#6B7280" />
@@ -213,12 +289,20 @@ export default function ShiftSwapModal({
 
           <TouchableOpacity
             className={`rounded-xl py-4 items-center ${
-              submitting || loading || availableShifts.length === 0
+              submitting ||
+              loading ||
+              availableShifts.length === 0 ||
+              staffStatus === "FullTime"
                 ? "bg-gray-400"
                 : "bg-orange-500"
             }`}
             onPress={handleSubmit}
-            disabled={submitting || loading || availableShifts.length === 0}
+            disabled={
+              submitting ||
+              loading ||
+              availableShifts.length === 0 ||
+              staffStatus === "FullTime"
+            }
           >
             {submitting ? (
               <ActivityIndicator color="white" />
@@ -228,6 +312,16 @@ export default function ShiftSwapModal({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={errorModalVisible}
+        title={errorModalTitle}
+        message={errorModalMessage}
+        buttonText="OK"
+        isSuccess={errorModalIsSuccess}
+        onClose={closeErrorModal}
+      />
     </Modal>
   );
 }
