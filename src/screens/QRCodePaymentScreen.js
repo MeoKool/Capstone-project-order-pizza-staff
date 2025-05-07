@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,6 +42,11 @@ export default function QRCodePaymentScreen() {
   const [cancellingPayment, setCancellingPayment] = useState(false);
   const [error, setError] = useState(null);
   const [switchingMethod, setSwitchingMethod] = useState(false);
+
+  // Add the following state variables after the other state declarations (around line 40)
+  const [splitBillModalVisible, setSplitBillModalVisible] = useState(false);
+  const [numberOfPeople, setNumberOfPeople] = useState("2");
+  const [amountPerPerson, setAmountPerPerson] = useState(0);
 
   // Error modal states
   const [errorModalVisible, setErrorModalVisible] = useState(false);
@@ -335,6 +342,26 @@ export default function QRCodePaymentScreen() {
     navigation.goBack();
   };
 
+  // Add the following function before the return statement
+  const handleSplitBill = () => {
+    setSplitBillModalVisible(true);
+    // Initialize with default calculation for 2 people
+    setAmountPerPerson(Math.ceil(totalAmount / 2));
+  };
+
+  const calculateSplitAmount = (people) => {
+    const peopleNum = Number.parseInt(people, 10);
+    if (peopleNum > 0) {
+      return Math.ceil(totalAmount / peopleNum);
+    }
+    return 0;
+  };
+
+  const handleNumberOfPeopleChange = (value) => {
+    setNumberOfPeople(value);
+    setAmountPerPerson(calculateSplitAmount(value));
+  };
+
   return (
     <LinearGradient colors={["#ff7e5f", "#feb47b"]} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -404,6 +431,15 @@ export default function QRCodePaymentScreen() {
                 {totalAmount.toLocaleString("vi-VN")} VNĐ
               </Text>
             </View>
+
+            {/* Split Bill Button */}
+            <TouchableOpacity
+              onPress={handleSplitBill}
+              className="bg-white/20 rounded-xl p-4 mb-6 w-full flex-row justify-center items-center"
+              activeOpacity={0.7}
+            >
+              <Text className="text-white text-lg font-medium">Chia Bill</Text>
+            </TouchableOpacity>
 
             {/* Loading indicator when switching payment methods */}
             {switchingMethod && (
@@ -548,6 +584,82 @@ export default function QRCodePaymentScreen() {
               )}
           </View>
         </ScrollView>
+
+        {/* Split Bill Modal */}
+        <Modal
+          visible={splitBillModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSplitBillModalVisible(false)}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <View className="bg-white rounded-xl p-6 w-[90%] max-w-md">
+              <Text className="text-xl font-bold text-center mb-4">
+                Chia Bill
+              </Text>
+
+              <Text className="text-base mb-2">Số người:</Text>
+              <View className="flex-row items-center mb-4">
+                <TouchableOpacity
+                  onPress={() => {
+                    const newValue = Math.max(
+                      1,
+                      Number.parseInt(numberOfPeople, 10) - 1
+                    );
+                    handleNumberOfPeopleChange(newValue.toString());
+                  }}
+                  className="bg-gray-200 p-3 rounded-l-lg"
+                >
+                  <Text className="text-lg font-bold">-</Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  value={numberOfPeople}
+                  onChangeText={(text) => {
+                    // Only allow numbers
+                    const numericValue = text.replace(/[^0-9]/g, "");
+                    if (
+                      numericValue === "" ||
+                      Number.parseInt(numericValue, 10) === 0
+                    ) {
+                      handleNumberOfPeopleChange("1");
+                    } else {
+                      handleNumberOfPeopleChange(numericValue);
+                    }
+                  }}
+                  keyboardType="numeric"
+                  className="bg-gray-100 p-2 text-center text-lg w-16"
+                />
+
+                <TouchableOpacity
+                  onPress={() => {
+                    const newValue = Number.parseInt(numberOfPeople, 10) + 1;
+                    handleNumberOfPeopleChange(newValue.toString());
+                  }}
+                  className="bg-gray-200 p-3 rounded-r-lg"
+                >
+                  <Text className="text-lg font-bold">+</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View className="bg-orange-100 p-4 rounded-lg mb-4">
+                <Text className="text-base text-center">
+                  Tổng tiền: {totalAmount.toLocaleString("vi-VN")} VNĐ
+                </Text>
+                <Text className="text-xl font-bold text-center text-orange-600 mt-2">
+                  Mỗi người: {amountPerPerson.toLocaleString("vi-VN")} VNĐ
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setSplitBillModalVisible(false)}
+                className="bg-orange-500 py-3 rounded-lg"
+              >
+                <Text className="text-white text-center font-bold">Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Error Modal */}
         <ErrorModal
