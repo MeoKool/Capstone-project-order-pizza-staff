@@ -56,10 +56,10 @@ export default function GuestInfoCard({
         <View
           style={{ backgroundColor: "#f9f9f9", padding: 16, borderRadius: 12 }}
         >
-          <TextRow
-            label="Trạng thái"
-            value={registerInfo.workshopRegisterStatus}
-          />
+          <TextRow label="Tên khách hàng" value={registerInfo.customerName} />
+          <TextRow label="Số điện thoại" value={registerInfo.customerPhone} />
+          <TextRow label="Tên workshop" value={registerInfo.workshop.name} />
+          <TextRow label="Khu vực" value={registerInfo.workshop.zoneName} />
           <TextRow label="Số người" value={registerInfo.totalParticipant} />
           <TextRow
             label="Tổng phí"

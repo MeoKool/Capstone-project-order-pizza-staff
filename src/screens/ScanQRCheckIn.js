@@ -137,7 +137,7 @@ export default function QRCheckInScreen({ navigation }) {
 
     try {
       const res = await axios.get(
-        `https://vietsac.id.vn/api/workshop-register/get-by-code/${data}`
+        `https://vietsac.id.vn/api/workshop-register/get-by-code/${data}?includeProperties=Workshop`
       );
       if (!res.data.success) throw new Error("QR không hợp lệ.");
 
