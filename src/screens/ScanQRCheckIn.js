@@ -207,7 +207,7 @@ export default function QRCheckInScreen({ navigation }) {
     try {
       setLoading(true);
       const tableRes = await axios.get(
-        `https://vietsac.id.vn/api/tables?Status=Closing`
+        `https://vietsac.id.vn/api/tables?Status=closing&SortBy=code&IncludeProperties=Zone`
       );
       setTables(tableRes.data.result.items);
       setStep("selectTable");
