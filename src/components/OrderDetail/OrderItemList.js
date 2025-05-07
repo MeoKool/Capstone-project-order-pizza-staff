@@ -1,9 +1,13 @@
+"use client";
+
 import { useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { ChevronDown, ChevronUp, X } from "lucide-react-native";
 import OrderItem from "./OrderItem";
 import axios from "axios";
 import ErrorModal from "../ErrorModal";
+
+const API_URL = "https://vietsac.id.vn"; // Define API_URL
 
 export default function OrderItemList({
   orderItems,
@@ -15,6 +19,7 @@ export default function OrderItemList({
   const [expandedSections, setExpandedSections] = useState({
     "Chưa hoàn thành": true,
     "Hoàn thành": true,
+    Combo: true,
   });
   const [closingTable, setClosingTable] = useState(false);
 
@@ -23,20 +28,56 @@ export default function OrderItemList({
   const [errorModalTitle, setErrorModalTitle] = useState("");
   const [errorModalMessage, setErrorModalMessage] = useState("");
 
+  // Process order items to separate combos and regular items
+  const processOrderItems = () => {
+    // Find all combo items
+    const comboItems = orderItems.filter((item) => item.isProductCombo);
+
+    // Find all non-combo items that don't have a parentId (not part of a combo)
+    const regularItems = orderItems.filter(
+      (item) => !item.isProductCombo && !item.parentId
+    );
+
+    // Separate regular items by completion status
+    const pendingItems = regularItems.filter(
+      (item) => item.orderItemStatus !== "Done"
+    );
+    const completedItems = regularItems.filter(
+      (item) => item.orderItemStatus === "Done"
+    );
+
+    return {
+      comboItems,
+      pendingItems,
+      completedItems,
+    };
+  };
+
+  // Get children for a combo item
+  const getComboChildren = (comboId) => {
+    return orderItems.filter((item) => item.parentId === comboId);
+  };
+
+  const { comboItems, pendingItems, completedItems } = processOrderItems();
+
   const sections = [
     {
       title: "Chưa hoàn thành",
-      data: orderItems.filter((item) => item.orderItemStatus !== "Done"),
-      count: orderItems.filter((item) => item.orderItemStatus !== "Done")
-        .length,
+      data: pendingItems,
+      count: pendingItems.length,
       color: "#f97316",
     },
     {
       title: "Hoàn thành",
-      data: orderItems.filter((item) => item.orderItemStatus === "Done"),
-      count: orderItems.filter((item) => item.orderItemStatus === "Done")
-        .length,
+      data: completedItems,
+      count: completedItems.length,
       color: "#10b981",
+    },
+    {
+      title: "Combo",
+      data: comboItems,
+      count: comboItems.length,
+      color: "#6366f1", // Indigo color for combos to match screenshot
     },
   ];
 
@@ -155,18 +196,33 @@ export default function OrderItemList({
     <>
       <FlatList
         data={sections}
-        renderItem={({ item }) => (
+        renderItem={({ item: section }) => (
           <View>
-            {renderSectionHeader({ section: item })}
-            {expandedSections[item.title] && (
+            {renderSectionHeader({ section })}
+            {expandedSections[section.title] && (
               <View>
-                {item.data.map((orderItem) => (
-                  <OrderItem
-                    key={orderItem.id}
-                    item={orderItem}
-                    onRefresh={onRetry}
-                  />
-                ))}
+                {section.data.map((orderItem) => {
+                  if (section.title === "Combo") {
+                    // For combo section, render combo items with their children
+                    return (
+                      <ComboItem
+                        key={orderItem.id}
+                        combo={orderItem}
+                        children={getComboChildren(orderItem.id)}
+                        onRefresh={onRetry}
+                      />
+                    );
+                  } else {
+                    // For regular sections, render normal items
+                    return (
+                      <OrderItem
+                        key={orderItem.id}
+                        item={orderItem}
+                        onRefresh={onRetry}
+                      />
+                    );
+                  }
+                })}
               </View>
             )}
           </View>
@@ -187,5 +243,211 @@ export default function OrderItemList({
         onClose={() => setErrorModalVisible(false)}
       />
     </>
+  );
+}
+
+// New component for combo items
+function ComboItem({ combo, children, onRefresh }) {
+  const [expanded, setExpanded] = useState(true);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultModalTitle, setResultModalTitle] = useState("");
+  const [resultModalMessage, setResultModalMessage] = useState("");
+  const [resultModalIsSuccess, setResultModalIsSuccess] = useState(false);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Done":
+        return "#22c55e";
+      case "Cancelled":
+        return "#ef4444";
+      default:
+        return "#eab308";
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case "Done":
+        return "Hoàn thành";
+      case "Cancelled":
+        return "Đã hủy";
+      default:
+        return "Chưa hoàn thành";
+    }
+  };
+
+  const handleCancelItem = async () => {
+    try {
+      // Show confirmation modal
+      setConfirmModalVisible(true);
+    } catch (err) {
+      // Show error modal
+      setResultModalTitle("Lỗi");
+      setResultModalMessage(
+        err.message || "Không thể hủy món. Vui lòng thử lại."
+      );
+      setResultModalIsSuccess(false);
+      setResultModalVisible(true);
+    }
+  };
+
+  const confirmCancelItem = async () => {
+    try {
+      setConfirmModalVisible(false);
+
+      const response = await axios.put(
+        `${API_URL}/api/order-items/cancelled/${combo.id}`
+      );
+
+      if (response.data.success) {
+        // Show success modal
+        setResultModalTitle("Thành công");
+        setResultModalMessage("Đã hủy món thành công");
+        setResultModalIsSuccess(true);
+        setResultModalVisible(true);
+
+        // Refresh the list after closing the modal
+        if (onRefresh) onRefresh();
+      } else {
+        throw new Error(response.data.message || "Hủy món thất bại");
+      }
+    } catch (err) {
+      // Show error modal
+      setResultModalTitle("Lỗi");
+      setResultModalMessage(
+        err.message || "Không thể hủy món. Vui lòng thử lại."
+      );
+      setResultModalIsSuccess(false);
+      setResultModalVisible(true);
+    }
+  };
+
+  return (
+    <View className="bg-white rounded-lg p-4 mb-3 shadow-md">
+      {/* Status Badge - only the dot indicator, no text */}
+      {!combo.isProductCombo && (
+        <View
+          className="absolute top-4 right-4 rounded-full p-1"
+          style={{
+            backgroundColor: `${getStatusColor(combo.orderItemStatus)}20`,
+          }}
+        >
+          <View
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: getStatusColor(combo.orderItemStatus) }}
+          />
+        </View>
+      )}
+
+      {/* Main content */}
+      <View className="flex-row justify-between items-center">
+        <Text className="text-lg font-semibold text-gray-800 pr-20 flex-1">
+          {combo.name}
+        </Text>
+
+        {/* Combo toggle button */}
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          className="p-1"
+        >
+          {expanded ? (
+            <ChevronUp size={20} color="#666" />
+          ) : (
+            <ChevronDown size={20} color="#666" />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View className="flex-row justify-between mt-2">
+        <Text className="text-sm text-gray-600">
+          Số lượng: {combo.quantity}
+        </Text>
+        <Text className="text-sm text-gray-600">
+          {combo.price.toLocaleString("vi-VN")} VNĐ
+        </Text>
+      </View>
+
+      {/* Combo badge */}
+      <View className="mt-2 bg-blue-50 rounded-md px-2 py-1 self-start">
+        <Text className="text-xs text-blue-600 font-medium">Combo</Text>
+      </View>
+
+      {/* Combo child items */}
+      {expanded && children.length > 0 && (
+        <View className="mt-3 bg-gray-50 rounded-lg p-3">
+          {children.map((childItem) => (
+            <View
+              key={childItem.id}
+              className="mb-2 border-b border-gray-100 pb-2 last:border-b-0 last:pb-0"
+            >
+              <View className="flex-row justify-between items-center">
+                <Text className="text-sm font-medium text-gray-700">
+                  {childItem.name}
+                </Text>
+
+                {/* Status indicator for child item */}
+                <View
+                  className="rounded-full px-2 py-0.5 flex-row items-center"
+                  style={{
+                    backgroundColor: `${getStatusColor(
+                      childItem.orderItemStatus
+                    )}20`,
+                  }}
+                >
+                  <View
+                    className="w-1.5 h-1.5 rounded-full mr-1"
+                    style={{
+                      backgroundColor: getStatusColor(
+                        childItem.orderItemStatus
+                      ),
+                    }}
+                  />
+                  <Text
+                    className="text-xs font-medium"
+                    style={{ color: getStatusColor(childItem.orderItemStatus) }}
+                  >
+                    {getStatusText(childItem.orderItemStatus)}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row justify-between mt-1">
+                <Text className="text-xs text-gray-500">
+                  Số lượng: {childItem.quantity}
+                </Text>
+                {childItem.price > 0 && (
+                  <Text className="text-xs text-gray-500">
+                    {childItem.price.toLocaleString("vi-VN")} VNĐ
+                  </Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Confirmation Modal */}
+      <ErrorModal
+        visible={confirmModalVisible}
+        title="Xác nhận"
+        message={`Bạn có chắc muốn hủy "${combo.name}"?`}
+        buttonText="Xác nhận"
+        cancelText="Hủy"
+        isWarning={true}
+        onClose={confirmCancelItem}
+        onCancel={() => setConfirmModalVisible(false)}
+      />
+
+      {/* Result Modal (Success/Error) */}
+      <ErrorModal
+        visible={resultModalVisible}
+        title={resultModalTitle}
+        message={resultModalMessage}
+        buttonText="OK"
+        isSuccess={resultModalIsSuccess}
+        onClose={() => setResultModalVisible(false)}
+      />
+    </View>
   );
 }
