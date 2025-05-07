@@ -60,9 +60,15 @@ export default function OrderItem({ item, onRefresh }) {
   const confirmCancelItem = async () => {
     try {
       setConfirmModalVisible(false);
-
+      const cancelReason = "Nhân viên hủy món";
       const response = await axios.put(
-        `${API_URL}/api/order-items/cancelled/${item.id}`
+        `${API_URL}/api/order-items/cancelled/${item.id}`,
+        cancelReason,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       if (response.data.success) {
